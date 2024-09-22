@@ -10,10 +10,11 @@ const scanDuration = 60 * 1000; // 1 minute
 // File to store the results
 const outputFile = 'mqtt_scan_results.json';
 
-// Store only the received data/messages
+// Store received data/messages and log events
 let capturedMessages = [];
+let hasLoggedConnectionError = false;
 
-// Function to save received messages to a JSON file
+// Function to save log events and messages to a JSON file
 function saveResults() {
     fs.writeFile(outputFile, JSON.stringify(capturedMessages, null, 2), (err) => {
         if (err) {
@@ -24,80 +25,136 @@ function saveResults() {
     });
 }
 
-// Function to attempt connection to MQTT (standard)
+// Log an event to the JSON file
+function logEvent(eventType, details) {
+    const eventLog = {
+        event: eventType,
+        details: details || {},
+        time: new Date()
+    };
+    capturedMessages.push(eventLog);
+    console.log(`${eventType}: ${JSON.stringify(details)}`);
+}
+
+// Function to dynamically construct the URL based on `ignorePort` setting
+function constructUrl(protocol) {
+    if (config.ignorePort) {
+        return `${protocol}://${config.host}`;
+    }
+    return `${protocol}://${config.host}:${config.port}`;
+}
+
+// Function to attempt connection to MQTT (standard) and send a message on connect
 function scanMQTT() {
-    const url = `mqtt://${config.host}:${config.port}`;
+    const url = constructUrl('mqtt');
     const options = {
         username: config.username,
         password: config.password,
+        qos: 1,  // QoS level to ensure message delivery
     };
 
     const client = mqtt.connect(url, options);
 
+    logEvent('scan_start', { protocol: 'MQTT', url });
+
     client.on('connect', () => {
-        console.log('Connected to MQTT broker (standard)');
+        logEvent('connected', { protocol: 'MQTT', url });
+        hasLoggedConnectionError = false;
 
         // Subscribe to all topics
-        client.subscribe('#', (err) => {
-            capturedMessages.push({ protocol: 'MQTT', message: "connection made", time: new Date() });
+        client.subscribe('#', { qos: 1 }, (err) => {
             if (err) {
-                console.error('Subscription error:', err);
+                logEvent('subscription_error', { error: err.message });
+            } else {
+                logEvent('subscribed', { topic: '#' });
+            }
+        });
+
+        // Send a test message after connecting to check write access
+        const testTopic = 'test/message';
+        const testMessage = 'Hello from MQTT client';
+        client.publish(testTopic, testMessage, { qos: 1 }, (err) => {
+            if (err) {
+                logEvent('publish_error', { error: err.message });
+            } else {
+                logEvent('message_sent', { topic: testTopic, message: testMessage });
             }
         });
 
         // Handle incoming messages
         client.on('message', (topic, message) => {
-            console.log(`Message received (MQTT): Topic = ${topic}, Message = ${message.toString()}`);
-            capturedMessages.push({ protocol: 'MQTT', topic: topic, message: message.toString(), time: new Date() });
+            logEvent('message_received', { topic: topic, message: message.toString() });
         });
     });
 
     client.on('error', (err) => {
-        console.error('Error (standard MQTT):', err.message);
+        if (!hasLoggedConnectionError) {
+            logEvent('connection_error', { error: err.message });
+            hasLoggedConnectionError = true; // Prevent logging the error continuously
+        }
     });
 
     // Disconnect after the scan duration
     setTimeout(() => {
         client.end();
-        console.log('MQTT scan (standard) completed');
+        logEvent('scan_completed', { protocol: 'MQTT' });
     }, scanDuration);
 }
 
-// Function to attempt connection to MQTT over WebSocket
+// Function to attempt connection to MQTT over WebSocket and send a message on connect
 function scanMQTTWebSocket() {
-    const url = `ws://${config.host}:${config.port}/mqtt`;
+    const url = constructUrl('ws');
     const options = {
         username: config.username,
         password: config.password,
+        qos: 1,  // QoS level to ensure message delivery
     };
 
     const client = mqtt.connect(url, options);
 
+    logEvent('scan_start', { protocol: 'WebSocket', url });
+
     client.on('connect', () => {
-        console.log('Connected to MQTT broker (WebSocket)');
+        logEvent('connected', { protocol: 'WebSocket', url });
+        hasLoggedConnectionError = false;
 
         // Subscribe to all topics
-        client.subscribe('#', (err) => {
+        client.subscribe('#', { qos: 1 }, (err) => {
             if (err) {
-                console.error('Subscription error (WebSocket):', err);
+                logEvent('subscription_error', { error: err.message });
+            } else {
+                logEvent('subscribed', { topic: '#' });
+            }
+        });
+
+        // Send a test message after connecting to check write access
+        const testTopic = 'test/message';
+        const testMessage = 'Hello from MQTT client (WebSocket)';
+        client.publish(testTopic, testMessage, { qos: 1 }, (err) => {
+            if (err) {
+                logEvent('publish_error', { error: err.message });
+            } else {
+                logEvent('message_sent', { topic: testTopic, message: testMessage });
             }
         });
 
         // Handle incoming messages
         client.on('message', (topic, message) => {
-            console.log(`Message received (WebSocket): Topic = ${topic}, Message = ${message.toString()}`);
-            capturedMessages.push({ protocol: 'WebSocket', topic: topic, message: message.toString(), time: new Date() });
+            logEvent('message_received', { topic: topic, message: message.toString() });
         });
     });
 
     client.on('error', (err) => {
-        console.error('Error (WebSocket):', err.message);
+        if (!hasLoggedConnectionError) {
+            logEvent('connection_error', { error: err.message });
+            hasLoggedConnectionError = true;
+        }
     });
 
     // Disconnect after the scan duration
     setTimeout(() => {
         client.end();
-        console.log('MQTT scan (WebSocket) completed');
+        logEvent('scan_completed', { protocol: 'WebSocket' });
     }, scanDuration);
 }
 

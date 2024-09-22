@@ -1,7 +1,39 @@
 [
   {
-    "protocol": "MQTT",
-    "message": "connection made",
-    "time": "2024-09-22T19:39:39.778Z"
+    "event": "scan_start",
+    "details": {
+      "protocol": "MQTT",
+      "url": "mqtt://test.mosquitto.org"
+    },
+    "time": "2024-09-22T20:14:52.271Z"
+  },
+  {
+    "event": "scan_start",
+    "details": {
+      "protocol": "WebSocket",
+      "url": "ws://test.mosquitto.org"
+    },
+    "time": "2024-09-22T20:14:52.278Z"
+  },
+  {
+    "event": "connection_error",
+    "details": {
+      "error": "Connection refused: Not authorized"
+    },
+    "time": "2024-09-22T20:14:52.376Z"
+  },
+  {
+    "event": "scan_completed",
+    "details": {
+      "protocol": "MQTT"
+    },
+    "time": "2024-09-22T20:15:52.287Z"
+  },
+  {
+    "event": "scan_completed",
+    "details": {
+      "protocol": "WebSocket"
+    },
+    "time": "2024-09-22T20:15:52.288Z"
   }
 ]
