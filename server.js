@@ -44,14 +44,22 @@ function constructUrl(protocol) {
     return `${protocol}://${config.host}:${config.port}`;
 }
 
+// Function to create the connection options based on `useCredentials` setting
+function getConnectionOptions() {
+    if (config.useCredentials) {
+        return {
+            username: config.username,
+            password: config.password,
+            qos: 1
+        };
+    }
+    return { qos: 1 }; // No authentication
+}
+
 // Function to attempt connection to MQTT (standard) and send a message on connect
 function scanMQTT() {
     const url = constructUrl('mqtt');
-    const options = {
-        username: config.username,
-        password: config.password,
-        qos: 1,  // QoS level to ensure message delivery
-    };
+    const options = getConnectionOptions();
 
     const client = mqtt.connect(url, options);
 
@@ -90,7 +98,7 @@ function scanMQTT() {
     client.on('error', (err) => {
         if (!hasLoggedConnectionError) {
             logEvent('connection_error', { error: err.message });
-            hasLoggedConnectionError = true; // Prevent logging the error continuously
+            hasLoggedConnectionError = true;
         }
     });
 
@@ -104,11 +112,7 @@ function scanMQTT() {
 // Function to attempt connection to MQTT over WebSocket and send a message on connect
 function scanMQTTWebSocket() {
     const url = constructUrl('ws');
-    const options = {
-        username: config.username,
-        password: config.password,
-        qos: 1,  // QoS level to ensure message delivery
-    };
+    const options = getConnectionOptions();
 
     const client = mqtt.connect(url, options);
 
