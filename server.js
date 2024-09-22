@@ -8,7 +8,7 @@ const config = require('./config.json');
 const scanDuration = 60 * 1000; // 1 minute
 
 // File to store the results
-const outputFile = 'mqtt_scan_results.json';
+const outputFile = 'mqtt_scan_data.json';
 
 // Store received data/messages and log events
 let capturedMessages = [];
