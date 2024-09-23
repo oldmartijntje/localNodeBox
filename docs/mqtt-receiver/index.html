@@ -54,6 +54,12 @@
                     });
                 } else if (e.data.action === 'publish') {
                     client.publish(e.data.topic, e.data.message);
+                } else if (e.data.action === 'updateSubscriptions') {
+                    client.unsubscribe('#');
+                    e.data.topics.forEach(topic => client.subscribe(topic));
+                } else if (e.data.action === 'subscribeAll') {
+                    e.data.topics.forEach(topic => client.unsubscribe(topic));
+                    client.subscribe('#');
                 }
             };
         `;
@@ -144,6 +150,14 @@
             }
         }
 
+        function updateSubscriptions() {
+            if (isScanning) {
+                worker.postMessage({ action: 'subscribeAll', topics: Array.from(selectedTopics) });
+            } else {
+                worker.postMessage({ action: 'updateSubscriptions', topics: Array.from(selectedTopics) });
+            }
+        }
+
         sendButton.addEventListener('click', sendMessage);
 
         messageInput.addEventListener('keypress', (event) => {
@@ -163,6 +177,7 @@
             Array.from(topicSelector.selectedOptions).forEach(option => {
                 selectedTopics.add(option.value);
             });
+            updateSubscriptions();
         });
 
         scanToggle.addEventListener('click', () => {
@@ -170,6 +185,7 @@
             scanToggle.textContent = isScanning ? "Stop Scanning" : "Start Scanning";
             scanToggle.classList.toggle('btn-success');
             scanToggle.classList.toggle('btn-danger');
+            updateSubscriptions();
         });
 
         clearButton.addEventListener('click', () => {
@@ -179,6 +195,7 @@
                 addTopicToSelector(topic);
             }
             autostopped = false;
+            updateSubscriptions();
         });
     </script>
 </body>
