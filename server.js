@@ -63,41 +63,41 @@ function scanMQTT() {
 
     const client = mqtt.connect(url, options);
 
-    logEvent('scan_start', { protocol: 'MQTT', url });
+    logEvent('mqtt/scan_start', { protocol: 'MQTT', url });
 
     client.on('connect', () => {
-        logEvent('connected', { protocol: 'MQTT', url });
+        logEvent('mqtt/connected', { protocol: 'MQTT', url });
         hasLoggedConnectionError = false;
 
         // Subscribe to all topics
-        client.subscribe('#', { qos: 1 }, (err) => {
+        client.subscribe('smartmeter/raw', (err) => {
             if (err) {
-                logEvent('subscription_error', { error: err.message });
+                logEvent('mqtt/subscription_error', { error: err.message });
             } else {
-                logEvent('subscribed', { topic: '#' });
+                logEvent('mqtt/subscribed', { topic: '#' });
             }
         });
 
         // Send a test message after connecting to check write access
         const testTopic = 'test/message';
         const testMessage = 'Hello from MQTT client';
-        client.publish(testTopic, testMessage, { qos: 1 }, (err) => {
+        client.publish(testTopic, testMessage, (err) => {
             if (err) {
-                logEvent('publish_error', { error: err.message });
+                logEvent('mqtt/publish_error', { error: err.message });
             } else {
-                logEvent('message_sent', { topic: testTopic, message: testMessage });
+                logEvent('mqtt/message_sent', { topic: testTopic, message: testMessage });
             }
         });
 
         // Handle incoming messages
         client.on('message', (topic, message) => {
-            logEvent('message_received', { topic: topic, message: message.toString() });
+            logEvent('mqtt/message_received', { topic: topic, message: message.toString() });
         });
     });
 
     client.on('error', (err) => {
         if (!hasLoggedConnectionError) {
-            logEvent('connection_error', { error: err.message });
+            logEvent('mqtt/connection_error', { error: err.message });
             hasLoggedConnectionError = true;
         }
     });
@@ -116,41 +116,41 @@ function scanMQTTWebSocket() {
 
     const client = mqtt.connect(url, options);
 
-    logEvent('scan_start', { protocol: 'WebSocket', url });
+    logEvent('ws/scan_start', { protocol: 'WebSocket', url });
 
     client.on('connect', () => {
-        logEvent('connected', { protocol: 'WebSocket', url });
+        logEvent('ws/connected', { protocol: 'WebSocket', url });
         hasLoggedConnectionError = false;
 
         // Subscribe to all topics
-        client.subscribe('#', { qos: 1 }, (err) => {
+        client.subscribe('smartmeter/raw', (err) => {
             if (err) {
-                logEvent('subscription_error', { error: err.message });
+                logEvent('ws/subscription_error', { error: err.message });
             } else {
-                logEvent('subscribed', { topic: '#' });
+                logEvent('ws/subscribed', { topic: '#' });
             }
         });
 
         // Send a test message after connecting to check write access
         const testTopic = 'test/message';
         const testMessage = 'Hello from MQTT client (WebSocket)';
-        client.publish(testTopic, testMessage, { qos: 1 }, (err) => {
+        client.publish(testTopic, testMessage, (err) => {
             if (err) {
-                logEvent('publish_error', { error: err.message });
+                logEvent('ws/publish_error', { error: err.message });
             } else {
-                logEvent('message_sent', { topic: testTopic, message: testMessage });
+                logEvent('ws/message_sent', { topic: testTopic, message: testMessage });
             }
         });
 
         // Handle incoming messages
         client.on('message', (topic, message) => {
-            logEvent('message_received', { topic: topic, message: message.toString() });
+            logEvent('ws/message_received', { topic: topic, message: message.toString() });
         });
     });
 
     client.on('error', (err) => {
         if (!hasLoggedConnectionError) {
-            logEvent('connection_error', { error: err.message });
+            logEvent('ws/connection_error', { error: err.message });
             hasLoggedConnectionError = true;
         }
     });
@@ -158,7 +158,7 @@ function scanMQTTWebSocket() {
     // Disconnect after the scan duration
     setTimeout(() => {
         client.end();
-        logEvent('scan_completed', { protocol: 'WebSocket' });
+        logEvent('ws/scan_completed', { protocol: 'WebSocket' });
     }, scanDuration);
 }
 

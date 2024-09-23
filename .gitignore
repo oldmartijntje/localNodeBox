@@ -2,6 +2,8 @@ config.json
 mqtt_scan_data.json
 yourfile.bin
 output.txt
+myMQTT.log
+MQTT-log.json
 # Logs
 logs
 *.log
