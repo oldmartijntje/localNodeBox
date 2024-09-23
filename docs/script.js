@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const statusElement = document.getElementById('status');
-    const toolLinks = document.querySelectorAll('.tool');
+    const descriptionElement = document.getElementById('description');
+    const toolLinks = document.querySelectorAll('.localTool');
 
     // Ping the local server to check if it's running
     fetch('http://localhost:3030/ping')
@@ -13,12 +14,10 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .catch(error => {
             statusElement.textContent = 'Not running locally';
-            // Disable some tools if not running locally
+            descriptionElement.textContent = "⚠️You are not running this locally, some tools require you to run this locally⚠️";
+            // Optionally disable tools if not running locally
             toolLinks.forEach(link => {
-                const toolId = link.getAttribute('data-tool');
-                if (toolId === '2' || toolId === '4') {
-                    link.classList.add('disabled');
-                }
+                link.classList.add('disabled');
             });
         });
 });

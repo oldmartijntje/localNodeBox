@@ -59,6 +59,9 @@ main().then(() => {
         console.error('Server startup error:', err);
         exit(1);
     });
+    app.use((req, res) => {
+        res.status(404).sendFile(path.join(staticHtmlPath, '404.html'));
+    });
 }).catch((error) => {
     console.error('Application error:', error);
     exit(1);

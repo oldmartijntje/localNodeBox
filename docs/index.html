@@ -40,15 +40,32 @@
 
     <div class="container mt-5">
         <h1 class="text-center">Welcome to OldMartijntje's Toolkit📦</h1>
-        <p class="text-center">This website has a variaty of tools and toys:</p>
+        <p class="text-center" id="description">This website has a variety of tools and toys:</p>
 
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="list-group" id="tool-list">
-                    <a href="#" class="list-group-item list-group-item-action tool" data-tool="1">Tool 1</a>
-                    <a href="#" class="list-group-item list-group-item-action tool" data-tool="2">Tool 2</a>
-                    <a href="#" class="list-group-item list-group-item-action tool" data-tool="3">Tool 3</a>
-                    <a href="#" class="list-group-item list-group-item-action tool" data-tool="4">Tool 4</a>
+        <!-- Accordion for tool categories -->
+        <div class="accordion" id="toolAccordion">
+            <!-- Category 1 -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        Miscellaneous Tools
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
+                    data-bs-parent="#toolAccordion">
+                    <div class="accordion-body">
+                        <ul class="list-group">
+                            <li><a href="./mqtt-receiver" class="list-group-item list-group-item-action"
+                                    data-tool="1">MQTT
+                                    receiver</a>
+                            </li>
+                            <!-- <li><a href="#" class="list-group-item list-group-item-action localTool" data-tool="1">MQTT
+                                    receiver</a>
+                            </li> -->
+
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
