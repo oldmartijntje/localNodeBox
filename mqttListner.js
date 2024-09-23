@@ -70,7 +70,7 @@ function scanMQTT() {
         hasLoggedConnectionError = false;
 
         // Subscribe to all topics
-        client.subscribe('smartmeter/raw', (err) => {
+        client.subscribe('#', (err) => {
             if (err) {
                 logEvent('mqtt/subscription_error', { error: err.message });
             } else {
@@ -123,7 +123,7 @@ function scanMQTTWebSocket() {
         hasLoggedConnectionError = false;
 
         // Subscribe to all topics
-        client.subscribe('smartmeter/raw', (err) => {
+        client.subscribe('#', (err) => {
             if (err) {
                 logEvent('ws/subscription_error', { error: err.message });
             } else {
