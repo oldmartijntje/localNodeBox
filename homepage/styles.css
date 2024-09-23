@@ -1,0 +1,17 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+.list-group-item.disabled {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #e9ecef;
+}
