@@ -21,6 +21,9 @@
             <div class="col-md-3">
                 <h3>Topics</h3>
                 <select id="topicSelector" class="form-select" multiple size="10"></select>
+                <sub>Hold Ctrl/Cmd to select multiple topics</sub>
+                <button id="scanToggle" class="btn btn-success mt-2">Stop Scanning</button>
+                <button id="clear" class="btn btn-info mt-2">Clear List</button>
             </div>
             <div class="col-md-9">
                 <div id="chatbox" class="border p-3 mb-3" style="height: 300px; overflow-y: auto;"></div>
@@ -64,9 +67,17 @@
         const messageInput = document.getElementById('messageInput');
         const topicInput = document.getElementById('topicInput');
         const sendButton = document.getElementById('sendButton');
+        const scanToggle = document.getElementById('scanToggle');
+        const clearButton = document.getElementById('clear');
 
-        const selectedTopics = new Set(["yeet", "/updateData/"]);
+        const selectedTopics = new Set(["oldmartijntjeFM", "test"]);
         const topics = new Set();
+        let isScanning = true;
+        let autostopped = false;
+
+        for (const topic of selectedTopics) {
+            addTopicToSelector(topic);
+        }
 
         worker.postMessage({ action: 'connect' });
 
@@ -75,14 +86,22 @@
                 console.log('Connected to MQTT broker');
             } else if (e.data.type === 'message') {
                 addMessageToChatbox(e.data.topic, e.data.message);
-                addTopicToSelector(e.data.topic);
+                if (isScanning) {
+                    addTopicToSelector(e.data.topic);
+                }
             }
         };
 
         function addMessageToChatbox(topic, message) {
             if (selectedTopics.has(topic)) {
                 const messageElement = document.createElement('div');
-                messageElement.textContent = `[${topic}] ${message}`;
+                const now = new Date(Date.now());
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+
+                const timeFormatted = `${hours}:${minutes}:${seconds}`;
+                messageElement.textContent = `(${timeFormatted})[${topic}] ${message}`;
                 chatbox.appendChild(messageElement);
                 chatbox.scrollTop = chatbox.scrollHeight;
             }
@@ -90,7 +109,11 @@
 
         function addTopicToSelector(topic) {
             if (!topics.has(topic)) {
-                console.log(`New topic: ${topic}`);
+                if (topics.size > 50 && !autostopped) {
+                    scanToggle.click();
+                    autostopped = true;
+                }
+                console.log(`New topic: ${topic}`, topics.size);
                 topics.add(topic);
                 const option = document.createElement('option');
                 option.value = topic;
@@ -112,6 +135,9 @@
             const message = messageInput.value;
             const topic = topicInput.value;
             if (message && topic) {
+                if (!topics.has(topic)) {
+                    addTopicToSelector(topic);
+                }
                 worker.postMessage({ action: 'publish', topic, message });
                 addMessageToChatbox(topic, `(You) ${message}`);
                 messageInput.value = '';
@@ -137,6 +163,22 @@
             Array.from(topicSelector.selectedOptions).forEach(option => {
                 selectedTopics.add(option.value);
             });
+        });
+
+        scanToggle.addEventListener('click', () => {
+            isScanning = !isScanning;
+            scanToggle.textContent = isScanning ? "Stop Scanning" : "Start Scanning";
+            scanToggle.classList.toggle('btn-success');
+            scanToggle.classList.toggle('btn-danger');
+        });
+
+        clearButton.addEventListener('click', () => {
+            topicSelector.innerHTML = '';
+            topics.clear();
+            for (const topic of selectedTopics) {
+                addTopicToSelector(topic);
+            }
+            autostopped = false;
         });
     </script>
 </body>
