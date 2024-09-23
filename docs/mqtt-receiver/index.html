@@ -34,37 +34,58 @@
     </div>
 
     <script>
-        const client = mqtt.connect('wss://test.mosquitto.org:8081');
+        // Web Worker for MQTT operations
+        const workerCode = `
+            importScripts('https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js');
+            let client;
+
+            self.onmessage = function(e) {
+                if (e.data.action === 'connect') {
+                    client = mqtt.connect('wss://test.mosquitto.org:8081');
+                    client.on('connect', () => {
+                        self.postMessage({type: 'connected'});
+                        client.subscribe('#');
+                    });
+                    client.on('message', (topic, message) => {
+                        self.postMessage({type: 'message', topic, message: message.toString()});
+                    });
+                } else if (e.data.action === 'publish') {
+                    client.publish(e.data.topic, e.data.message);
+                }
+            };
+        `;
+
+        const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+        const worker = new Worker(workerUrl);
+
         const topicSelector = document.getElementById('topicSelector');
         const chatbox = document.getElementById('chatbox');
         const messageInput = document.getElementById('messageInput');
         const topicInput = document.getElementById('topicInput');
         const sendButton = document.getElementById('sendButton');
 
-        var selectedTopics = new Set("yeet");
-
+        const selectedTopics = new Set(["yeet", "/updateData/"]);
         const topics = new Set();
 
-        client.on('connect', () => {
-            console.log('Connected to MQTT broker');
-            client.subscribe('/updateData/');
-            client.subscribe('yeet');
-        });
+        worker.postMessage({ action: 'connect' });
 
-        client.on('message', (topic, message) => {
-            const messageText = message.toString();
-            addMessageToChatbox(topic, messageText);
-            addTopicToSelector(topic);
-        });
+        worker.onmessage = function (e) {
+            if (e.data.type === 'connected') {
+                console.log('Connected to MQTT broker');
+            } else if (e.data.type === 'message') {
+                addMessageToChatbox(e.data.topic, e.data.message);
+                addTopicToSelector(e.data.topic);
+            }
+        };
 
         function addMessageToChatbox(topic, message) {
-            if (!selectedTopics.has(topic)) {
-                return;
+            if (selectedTopics.has(topic)) {
+                const messageElement = document.createElement('div');
+                messageElement.textContent = `[${topic}] ${message}`;
+                chatbox.appendChild(messageElement);
+                chatbox.scrollTop = chatbox.scrollHeight;
             }
-            const messageElement = document.createElement('div');
-            messageElement.textContent = `[${topic}] ${message}`;
-            chatbox.appendChild(messageElement);
-            chatbox.scrollTop = chatbox.scrollHeight;
         }
 
         function addTopicToSelector(topic) {
@@ -74,6 +95,7 @@
                 const option = document.createElement('option');
                 option.value = topic;
                 option.textContent = topic;
+                option.selected = selectedTopics.has(topic);
                 topicSelector.appendChild(option);
                 sortTopicSelector();
             }
@@ -90,7 +112,7 @@
             const message = messageInput.value;
             const topic = topicInput.value;
             if (message && topic) {
-                client.publish(topic, message);
+                worker.postMessage({ action: 'publish', topic, message });
                 addMessageToChatbox(topic, `(You) ${message}`);
                 messageInput.value = '';
             }
@@ -108,6 +130,13 @@
             if (event.key === 'Enter') {
                 sendMessage();
             }
+        });
+
+        topicSelector.addEventListener('change', () => {
+            selectedTopics.clear();
+            Array.from(topicSelector.selectedOptions).forEach(option => {
+                selectedTopics.add(option.value);
+            });
         });
     </script>
 </body>
