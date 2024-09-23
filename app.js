@@ -39,7 +39,7 @@ async function main() {
 main().then(() => {
     const settings = require('./settings.json');
     const port = settings.port || 3000;
-    const staticHtmlPath = path.join(__dirname, './homepage');
+    const staticHtmlPath = path.join(__dirname, './docs');
 
 
     const app = express();
