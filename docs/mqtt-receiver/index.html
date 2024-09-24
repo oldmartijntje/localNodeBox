@@ -16,6 +16,11 @@
 </head>
 
 <body>
+    <style>
+        .resizable {
+            overflow: auto;
+        }
+    </style>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="../">OldMartijntje's Toolkit📦</a>
@@ -47,7 +52,7 @@
         <div class="row">
             <div class="col-md-3">
                 <h3>Topics (<span id="totalTopics">π</span>)</h3>
-                <select id="topicSelector" class="form-select" multiple size="10"></select>
+                <select id="topicSelector" class="form-select resizable" multiple size="10"></select>
                 <sub>Hold Ctrl/Cmd to select multiple topics</sub>
                 <button id="scanToggle" class="btn btn-success mt-2">Stop Scanning</button>
                 <button id="clear" class="btn btn-info mt-2">Clear List</button>

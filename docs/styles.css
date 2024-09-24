@@ -15,3 +15,14 @@ footer {
     pointer-events: none;
     background-color: #e9ecef;
 }
+
+.resizable {
+    width: 300px;
+    height: 200px;
+    padding: 10px;
+    border: 1px solid #000;
+    overflow: auto;
+    /* Required for resizing */
+    resize: both;
+    /* Can be 'both', 'horizontal', 'vertical', or 'none' */
+}
