@@ -215,6 +215,14 @@
 
                 const timeFormatted = `${hours}:${minutes}:${seconds}`;
                 messageElement.textContent = `(${timeFormatted})[${topic}] ${message}`;
+                messageElement.style = "cursor: pointer;";
+                messageElement.addEventListener('click', () => {
+                    messageInput.value = message;
+                    if (message.startsWith('(You)')) {
+                        messageInput.value = message.slice(6);
+                    }
+                    topicInput.value = topic;
+                });
                 chatbox.appendChild(messageElement);
                 chatbox.scrollTop = chatbox.scrollHeight;
 
