@@ -20,6 +20,19 @@
         .resizable {
             overflow: auto;
         }
+
+        #backendData {
+            max-height: 300px;
+            max-width: 300px;
+            overflow: auto;
+            border: 1px solid black;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .amountIndicator {
+            color: blue;
+        }
     </style>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
@@ -54,13 +67,25 @@
                 <h3>Topics (<span id="totalTopics">π</span>)</h3>
                 <select id="topicSelector" class="form-select resizable" multiple size="10"></select>
                 <sub>Hold Ctrl/Cmd to select multiple topics</sub>
-                <button id="scanToggle" class="btn btn-success mt-2">Stop Scanning</button>
-                <button id="clear" class="btn btn-info mt-2">Clear List</button>
+                <div class="input-group mb-3">
+                    <button id="scanToggle" class="btn btn-success mt-2">Stop Scanning</button>
+                    <button id="clear" class="btn btn-info mt-2">Clear List</button>
+                </div>
+                <button id="clear" class="btn btn-danger mt-2">Remove Storage🗑️</button>
                 <h3>Server Address:</h3>
                 <div class="input-group mb-3">
                     <input type="text" id="serverAddress" class="form-control" placeholder="test.mosquitto.org:8081"
                         value="test.mosquitto.org:8081">
                     <button class="btn btn-success" type="button" id="updateServerAddress">Update</button>
+                </div>
+                <div id="backend" style="display: none;">
+                    <div class="input-group mb-3" style="margin: 0px !important;">
+                        <button id="scanBackend" class="btn btn-primary mt-2">Backend scan topics</button>
+                        <button id="retrieveBackend" class="btn btn-primary mt-2">Retrieve Data</button>
+                    </div>
+                    <p>⚠️Only Works Locally⚠️</p>
+                    <input type="text" class="form-control" placeholder="Filter" id="topicFilter">
+                    <div id="backendData" class="mb-3"></div>
                 </div>
             </div>
             <div class="col-md-9">
@@ -113,6 +138,7 @@
             };
         `;
 
+
         const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
         const workerUrl = URL.createObjectURL(workerBlob);
         const worker = new Worker(workerUrl);
@@ -131,14 +157,99 @@
         const spammer = document.getElementById('spammer');
         const serverAddress = document.getElementById('serverAddress');
         const updateServerAddress = document.getElementById('updateServerAddress');
+        const backend = document.getElementById('backend');
+        const retrieveBackend = document.getElementById('retrieveBackend');
+        const scanBackend = document.getElementById('scanBackend');
+        const backendData = document.getElementById('backendData');
+        const topicFilter = document.getElementById('topicFilter');
 
+        var localMode = false;
         var spamInterval;
+        const SCANNING_MINUTES = 10;
         const MAX_LOADED_MESSAGES = 100;
 
+        let allTopics = {};
         const selectedTopics = new Set();
         const topics = new Set();
         let isScanning = true;
         let autostopped = false;
+
+        retrieveBackend.addEventListener('click', () => {
+            if (!localMode) {
+                alert('Backend scan only available in local mode');
+                return;
+            }
+            fetch('http://localhost:3030/mqtt/getScanData', {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                method: 'GET'
+            })
+                .then(async (response) => {
+                    const newResponse = await response.json();
+                    allTopics = newResponse;
+                    displayTopicList();
+                })
+        });
+
+        function displayTopicList() {
+            backendData.innerHTML = '';
+            for (const topic in allTopics) {
+                if (topicFilter.value != "" && !topic.includes(topicFilter.value)) {
+                    continue;
+                }
+                const topicElement = document.createElement('p');
+                topicElement.style = "margin: 0px; cursor: pointer;";
+                topicElement.innerHTML = `<span class="amountIndicator">${allTopics[topic].callsPerHour} msg/h</span>: ${topic}`;
+                backendData.appendChild(topicElement);
+                topicElement.onclick = () => {
+                    selectedTopics.add(topic);
+                    addTopicToSelector(topic);
+                    saveAllSettings();
+                    topicElement.remove();
+                }
+            }
+        }
+        topicFilter.addEventListener('input', () => {
+            displayTopicList();
+        });
+
+        scanBackend.addEventListener('click', () => {
+            if (!localMode) {
+                alert('Backend scan only available in local mode');
+                return;
+            }
+            fetch('http://localhost:3030/mqtt/scanMqtt', {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                method: 'POST', body: JSON.stringify({
+                    broker: serverAddress.value,
+                    minutes: SCANNING_MINUTES
+                })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert(`Scanning backend for ${SCANNING_MINUTES} minutes...\nClick "Retrieve Data" to see the results`);
+
+                    } else {
+                        alert(`Already scanning backend for ${SCANNING_MINUTES} minutes...\nClick "Retrieve Data" to see the results`);
+                    }
+                })
+
+        });
+
+        fetch('http://localhost:3030/ping')
+            .then(response => {
+                if (response.ok) {
+                    localMode = true;
+                }
+                backend.style.display = localMode ? 'block' : 'none';
+            })
+            .catch(error => {
+                localMode = false;
+                backend.style.display = localMode ? 'block' : 'none';
+            });
 
         loadAllSettings();
         for (const topic of selectedTopics) {
@@ -330,7 +441,7 @@
             isScanning = !isScanning;
             scanToggle.textContent = isScanning ? "Stop Scanning" : "Start Scanning";
             scanToggle.classList.toggle('btn-success');
-            scanToggle.classList.toggle('btn-danger');
+            scanToggle.classList.toggle('btn-warning');
             updateSubscriptions();
         });
 

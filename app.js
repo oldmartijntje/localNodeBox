@@ -51,7 +51,7 @@ main().then(() => {
     app.set('trust proxy', true);
     app.use(cors());
     app.use(expressStatic(staticHtmlPath));
-    app.use("/connect", appRouter);
+    app.use("/mqtt", appRouter);
     // start the Express server
     app.listen(port, () => {
         console.log(`Server running at http://localhost:${port}...`);
