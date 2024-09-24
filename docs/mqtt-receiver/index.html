@@ -8,7 +8,7 @@
     <meta property="og:image" content="https://i.imgur.com/NeU2I13.png">
     <link rel="stylesheet" href="../styles.css">
     <title>OldMartijntje's MQTT Receiver</title>
-    <meta name="description" content="MQTT Chat using test.mosquitto.org broker">
+    <meta name="description" content="MQTT Receiver.">
     <meta name="keywords" content="MQTT, Chat, WebSocket, Bootstrap">
     <meta name="author" content="OldMartijntje">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -51,6 +51,12 @@
                 <sub>Hold Ctrl/Cmd to select multiple topics</sub>
                 <button id="scanToggle" class="btn btn-success mt-2">Stop Scanning</button>
                 <button id="clear" class="btn btn-info mt-2">Clear List</button>
+                <h3>Server Address:</h3>
+                <div class="input-group mb-3">
+                    <input type="text" id="serverAddress" class="form-control" placeholder="test.mosquitto.org:8081"
+                        value="test.mosquitto.org:8081">
+                    <button class="btn btn-success" type="button" id="updateServerAddress">Update</button>
+                </div>
             </div>
             <div class="col-md-9">
                 <div id="chatbox" class="border p-3 mb-3" style="height: 300px; overflow-y: auto;"></div>
@@ -59,7 +65,16 @@
                     <input type="text" id="topicInput" class="form-control" placeholder="Topic" value="oldmartijntjeFM">
                     <button class="btn btn-primary" type="button" id="sendButton">Send</button>
                 </div>
+                <p>Send message every X seconds:</p>
+                <div class="input-group mb-3">
+                    <input type="text" id="messageSpamInput" class="form-control" placeholder="Message">
+                    <input type="text" id="topicSpamInput" class="form-control" placeholder="Topic"
+                        value="oldmartijntjeFM">
+                    <input type="number" id="interval" class="form-control" value=10 min="1" value="oldmartijntjeFM">
+                    <button class="btn btn-success" type="button" id="spammer">Start Spammer</button>
+                </div>
             </div>
+
         </div>
     </div>
 
@@ -71,7 +86,7 @@
 
             self.onmessage = function(e) {
                 if (e.data.action === 'connect') {
-                    client = mqtt.connect('wss://test.mosquitto.org:8081');
+                    client = mqtt.connect('wss://' + e.data.server);
                     client.on('connect', () => {
                         self.postMessage({type: 'connected'});
                         client.subscribe('#');
@@ -87,6 +102,8 @@
                 } else if (e.data.action === 'subscribeAll') {
                     e.data.topics.forEach(topic => client.unsubscribe(topic));
                     client.subscribe('#');
+                } else if (e.data.action === 'disconnect') {
+                    client.end();
                 }
             };
         `;
@@ -103,18 +120,79 @@
         const scanToggle = document.getElementById('scanToggle');
         const clearButton = document.getElementById('clear');
         const totalTopics = document.getElementById('totalTopics');
+        const messageSpamInput = document.getElementById('messageSpamInput');
+        const topicSpamInput = document.getElementById('topicSpamInput');
+        const interval = document.getElementById('interval');
+        const spammer = document.getElementById('spammer');
+        const serverAddress = document.getElementById('serverAddress');
+        const updateServerAddress = document.getElementById('updateServerAddress');
 
-        const selectedTopics = new Set(["oldmartijntjeFM", "bat-signal", "tominhisroom.dev", "oldmartijntjeFM2"]);
+        var spamInterval;
+        const MAX_LOADED_MESSAGES = 100;
+
+        const selectedTopics = new Set();
         const topics = new Set();
-        addTopicToSelector("test");
         let isScanning = true;
         let autostopped = false;
 
+        loadAllSettings();
         for (const topic of selectedTopics) {
             addTopicToSelector(topic);
         }
 
-        worker.postMessage({ action: 'connect' });
+        function saveAllSettings() {
+            console.log('Saving settings');
+            const settings = {
+                selectedTopics: Array.from(selectedTopics),
+                topicInput: topicInput.value,
+                serverAddress: serverAddress.value,
+                topicSpamInput: topicSpamInput.value,
+                messageSpamInput: messageSpamInput.value,
+                interval: interval.value
+            }
+            const sessionSettings = {
+                topics: Array.from(topics),
+            }
+            localStorage.setItem('mqtt-receiver-settings', JSON.stringify(settings));
+            sessionStorage.setItem('mqtt-receiver-session', JSON.stringify(sessionSettings));
+        }
+
+        function loadAllSettings() {
+            const settings = JSON.parse(localStorage.getItem('mqtt-receiver-settings'));
+            const sessionSettings = JSON.parse(sessionStorage.getItem('mqtt-receiver-session'));
+
+            if (settings) {
+                selectedTopics.clear();
+                settings.selectedTopics.forEach(topic => {
+                    selectedTopics.add(topic)
+                });
+                topicInput.value = settings.topicInput;
+                serverAddress.value = settings.serverAddress;
+                topicSpamInput.value = settings.topicSpamInput;
+                messageSpamInput.value = settings.messageSpamInput;
+                interval.value = settings.interval;
+            }
+            if (sessionSettings) {
+                topics.clear();
+                sessionSettings.topics.forEach(topic => addTopicToSelector(topic, true));
+                totalTopics.textContent = topics.size;
+            }
+            if (selectedTopics.size === 0) {
+                serverAddress.value = "test.mosquitto.org:8081";
+                ["oldmartijntjeFM", "bat-signal", "oldmartijntjeFM2"].forEach(topic => {
+                    selectedTopics.add(topic)
+                    addTopicToSelector(topic, true);
+                });
+            }
+            if (topics.size === 0) {
+                ["test", "tominhisroom.dev"].forEach(topic => {
+                    addTopicToSelector(topic, true);
+                });
+            }
+
+        }
+
+        worker.postMessage({ action: 'connect', server: serverAddress.value });
 
         worker.onmessage = function (e) {
             if (e.data.type === 'connected') {
@@ -139,14 +217,20 @@
                 messageElement.textContent = `(${timeFormatted})[${topic}] ${message}`;
                 chatbox.appendChild(messageElement);
                 chatbox.scrollTop = chatbox.scrollHeight;
+
+                while (chatbox.children.length > MAX_LOADED_MESSAGES) {
+                    chatbox.removeChild(chatbox.children[0]);
+                }
             }
         }
 
-        function addTopicToSelector(topic) {
+        function addTopicToSelector(topic, fromMemory = false) {
             if (!topics.has(topic)) {
-                if (topics.size > 50 && !autostopped) {
+                if (topics.size > 50 && !autostopped && !fromMemory) {
                     scanToggle.click();
                     autostopped = true;
+                    saveAllSettings();
+                    return
                 }
                 // console.log(`New topic: ${topic}`);
                 topics.add(topic);
@@ -192,7 +276,7 @@
                 if (!topics.has(topic)) {
                     addTopicToSelector(topic);
                 }
-                worker.postMessage({ action: 'publish', topic, message });
+                worker.postMessage({ action: 'publish', topic, message, server: serverAddress.value });
                 addMessageToChatbox(topic, `(You) ${message}`);
                 messageInput.value = '';
             }
@@ -200,9 +284,9 @@
 
         function updateSubscriptions() {
             if (isScanning) {
-                worker.postMessage({ action: 'subscribeAll', topics: Array.from(selectedTopics) });
+                worker.postMessage({ action: 'subscribeAll', topics: Array.from(selectedTopics), server: serverAddress.value });
             } else {
-                worker.postMessage({ action: 'updateSubscriptions', topics: Array.from(selectedTopics) });
+                worker.postMessage({ action: 'updateSubscriptions', topics: Array.from(selectedTopics), server: serverAddress.value });
             }
         }
 
@@ -225,6 +309,7 @@
             Array.from(topicSelector.selectedOptions).forEach(option => {
                 selectedTopics.add(option.value);
             });
+            saveAllSettings();
             updateSubscriptions();
         });
 
@@ -246,6 +331,60 @@
             autostopped = false;
             updateSubscriptions();
         });
+
+        spammer.addEventListener('click', () => {
+            if (spammer.textContent === "Start Spammer") {
+                spammer.textContent = "Stop Spammer";
+                spammer.classList.remove('btn-success');
+                spammer.classList.add('btn-danger');
+                spamInterval = setInterval(() => {
+                    const message = messageSpamInput.value;
+                    const topic = topicSpamInput.value;
+                    if (message && topic) {
+                        worker.postMessage({ action: 'publish', topic, message, server: serverAddress.value });
+                        addMessageToChatbox(topic, `(You) ${message}`);
+                    }
+                }, interval.value * 1000);
+            } else {
+                spammer.textContent = "Start Spammer";
+                spammer.classList.remove('btn-danger');
+                spammer.classList.add('btn-success');
+                clearInterval(spamInterval);
+            }
+        });
+
+        updateServerAddress.addEventListener('click', () => {
+            if (serverAddress.value == "") {
+                serverAddress.value = "test.mosquitto.org:8081";
+            }
+            worker.postMessage({ action: 'disconnect' });
+            worker.postMessage({ action: 'connect', server: serverAddress.value });
+        });
+
+        serverAddress.addEventListener('keypress', (event) => {
+            saveAllSettings();
+        });
+
+        topicSpamInput.addEventListener('keypress', (event) => {
+            saveAllSettings();
+        });
+
+        messageSpamInput.addEventListener('keypress', (event) => {
+            saveAllSettings();
+        });
+
+        topicInput.addEventListener('keypress', (event) => {
+            saveAllSettings();
+        });
+
+        interval.addEventListener('change', (event) => {
+            saveAllSettings();
+        });
+
+
+
+
+
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
