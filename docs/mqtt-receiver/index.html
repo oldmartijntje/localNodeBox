@@ -71,7 +71,7 @@
                     <button id="scanToggle" class="btn btn-success mt-2">Stop Scanning</button>
                     <button id="clear" class="btn btn-info mt-2">Clear List</button>
                 </div>
-                <button id="clear" class="btn btn-danger mt-2">Remove Storage🗑️</button>
+                <button id="clearData" class="btn btn-danger mt-2">Remove Storage🗑️</button>
                 <h3>Server Address:</h3>
                 <div class="input-group mb-3">
                     <input type="text" id="serverAddress" class="form-control" placeholder="test.mosquitto.org:8081"
@@ -162,6 +162,7 @@
         const scanBackend = document.getElementById('scanBackend');
         const backendData = document.getElementById('backendData');
         const topicFilter = document.getElementById('topicFilter');
+        const clearData = document.getElementById('clearData');
 
         var localMode = false;
         var spamInterval;
@@ -190,6 +191,14 @@
                     allTopics = newResponse;
                     displayTopicList();
                 })
+        });
+
+        clearData.addEventListener('click', () => {
+            if (confirm('Are you sure you want to remove all stored data?')) {
+                localStorage.removeItem('mqtt-receiver-settings');
+                sessionStorage.removeItem('mqtt-receiver-session');
+                location.reload();
+            }
         });
 
         function displayTopicList() {
