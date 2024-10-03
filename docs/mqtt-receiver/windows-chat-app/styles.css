@@ -176,6 +176,10 @@ body {
     padding: 2px 6px;
 }
 
+button {
+    cursor: pointer;
+}
+
 @media (min-width: 768px) {
     .windows-container {
         flex-direction: row;
