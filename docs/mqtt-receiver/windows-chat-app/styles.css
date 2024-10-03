@@ -1,0 +1,138 @@
+body {
+    font-family: 'MS Sans Serif', Arial, sans-serif;
+    background-color: #008080;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+.windows-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    max-width: 800px;
+    margin: 0 auto;
+}
+.window {
+    background-color: #c0c0c0;
+    border: 2px solid #ffffff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 2px 2px 0 #000000;
+    margin-bottom: 20px;
+}
+.chat-window {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(90svh - 260px);
+}
+.contacts-window {
+    width: 100%;
+}
+.title-bar {
+    background-color: #000080;
+    color: white;
+    padding: 2px 4px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.title-bar-controls {
+    display: flex;
+}
+.title-bar-controls button {
+    width: 16px;
+    height: 16px;
+    background-color: #c0c0c0;
+    border: 1px solid #ffffff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    margin-left: 2px;
+}
+.chat-area, .contacts-area {
+    overflow-y: auto;
+    border: 1px solid #808080;
+    background-color: white;
+    margin: 4px;
+    padding: 4px;
+}
+.chat-area {
+    flex-grow: 1;
+    max-height: calc(90svh - 330px);
+}
+.contacts-area {
+    height: 150px;
+}
+.input-area {
+    display: flex;
+    margin: 4px;
+}
+.input-area input {
+    flex-grow: 1;
+    font-family: 'MS Sans Serif', Arial, sans-serif;
+    border: 1px solid #808080;
+    padding: 2px;
+}
+.input-area button {
+    font-family: 'MS Sans Serif', Arial, sans-serif;
+    background-color: #c0c0c0;
+    border: 1px solid #ffffff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    padding: 2px 6px;
+    margin-left: 4px;
+}
+.contact {
+    padding: 2px 4px;
+    cursor: pointer;
+}
+.contact:hover {
+    background-color: #000080;
+    color: white;
+}
+.taskbar {
+    background-color: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    padding: 2px 8px;
+    display: flex;
+    align-items: center;
+}
+.start-button {
+    background-color: #c0c0c0;
+    border: 2px solid #ffffff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    padding: 2px 6px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+.home-link {
+    color: #000000;
+    text-decoration: none;
+    font-size: 0.9em;
+}
+.home-link:hover {
+    text-decoration: underline;
+}
+
+@media (min-width: 768px) {
+    .windows-container {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+    .contacts-window {
+        width: 200px;
+        margin-right: 20px;
+    }
+    .chat-area {
+        height: 330px;
+    }
+    .chat-window {
+        flex-grow: 1;
+    }
+    .contacts-area {
+        height: 330px;
+    }
+}
