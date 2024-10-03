@@ -10,6 +10,17 @@ let settings = localSettings ? JSON.parse(localSettings) : {
     username: '',
 };
 let enteredUsername = false;
+let testMessage = {
+    username: 'test',
+    message: 'test message',
+    time: new Date().toLocaleTimeString(),
+}
+let testPing = {
+    username: 'test',
+    message: 'ping',
+    biography: 'ping',
+    time: new Date().toLocaleTimeString(),
+}
 
 if (settings.username && settings.username.trim() !== '') {
     overlay.style.display = 'none';
