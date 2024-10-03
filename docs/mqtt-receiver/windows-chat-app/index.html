@@ -4,26 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Old Windows Chatroom</title>
+    <link rel="icon" href="https://i.imgur.com/1noWzDB.png" type="image/x-icon">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="windows-container">
-        <div class="window contacts-window">
-            <div class="title-bar">
-                <span>Online Contacts</span>
-                <div class="title-bar-controls">
-                    <button>_</button>
-                    <button>□</button>
-                    <button>X</button>
+        <div>
+            <div class="window contacts-window">
+                <div class="title-bar">
+                    <span>Online Contacts</span>
+                    <div class="title-bar-controls">
+                        <button>_</button>
+                        <button>□</button>
+                        <button>X</button>
+                    </div>
+                </div>
+                <div class="contacts-area">
+                    <div class="contact">🟢 User1</div>
+                    <div class="contact">🟢 User2</div>
+                    <div class="contact">🟢 ChatMaster99</div>
+                    <div class="contact">🟡 AFK_King</div>
+                    <div class="contact">🟢 CoolDude42</div>
+                    <div class="contact">🟢 ChatQueen2000</div>
                 </div>
             </div>
-            <div class="contacts-area">
-                <div class="contact">🟢 User1</div>
-                <div class="contact">🟢 User2</div>
-                <div class="contact">🟢 ChatMaster99</div>
-                <div class="contact">🟡 AFK_King</div>
-                <div class="contact">🟢 CoolDude42</div>
-                <div class="contact">🟢 ChatQueen2000</div>
+            <div class="window contacts-window">
+                <div class="title-bar">
+                    <span>Profile</span>
+                    <div class="title-bar-controls">
+                        <button>_</button>
+                        <button>□</button>
+                        <button>X</button>
+                    </div>
+                </div>
+                <div class="info-area">
+                    <div style="margin-bottom:4px"><strong>Username: </strong><span id="username-field">���</span></div>
+                    <button class="windows-button">Edit</button>
+                </div>
             </div>
         </div>
         <div class="window chat-window">
@@ -49,8 +66,27 @@
     </div>
     <div class="taskbar">
         <button class="start-button">Start</button>
-        <a href="../../" class="home-link">Return to Homepage</a>
+        <a href="#" class="home-link">Return to Homepage</a>
     </div>
-    <script src="script.js"></script>
+    
+    <!-- Username dialog -->
+    <div class="overlay">
+        <div class="dialog">
+            <div class="dialog-title">
+                <span>Enter Username</span>
+                <div class="title-bar-controls">
+                    <button>X</button>
+                </div>
+            </div>
+            <div class="dialog-content">
+                <label for="username">Enter your username:</label>
+                <input type="text" id="username" name="username">
+                <button>OK</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js" defer></script>
+
 </body>
+
 </html>
