@@ -1,4 +1,10 @@
 {
+    "name": "local-node-box",
+    "version": "1.0.0",
+    "author": "https://oldmartijntje.nl",
+    "scripts": {
+        "start": "node app.js"
+    },
     "dependencies": {
         "date-fns": "^4.1.0",
         "mqtt": "^5.10.1",
