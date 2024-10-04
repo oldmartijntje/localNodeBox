@@ -92,6 +92,8 @@ for (const key of Object.keys(settings.activeContacts)) {
     const sendingPingRequestURL = `${settings.frequencyUsed}/${key}/pingRequest`;
     client.publish(sendingPingRequestURL, JSON.stringify({ userId: settings.userId }));
 }
+renderContacts();
+selectChat(activeChatId);
 
 usernameEditButton.addEventListener('click', () => {
     overlay.style.display = 'flex';
@@ -162,24 +164,26 @@ setInterval(() => {
 
 setInterval(() => {
     ckeckChatStatus();
-}, 60000); // 1 minute
+}, 10000); // 10 seconds
 
 function ckeckChatStatus() {
     let changed = false;
     for (const [key, value] of Object.entries(settings.activeContacts)) {
         let changedThisId = false;
-        if (value.time + 60000 < Date.now()) {
+        const time = new Date(value.time).getTime();
+        const now = new Date(Date.now()).getTime();
+        if (time + 60000 < now) {
             // 1 minute inactivity
             if (value.status == 2) {
                 value.status = 1;
                 changed = true;
                 changedThisId = true;
-            } else if (value.status < 2 && value.time + 300000 < Date.now()) {
+            } else if (value.status < 2 && time + 300000 < now) {
                 // 5 ,minutes inactivity
                 value.status = 0;
                 changed = true;
                 changedThisId = true;
-                if ((!settings.chatHistory[value.identifier] || settings.chatHistory[value.identifier].length === 0) && value.time + 600000 < Date.now()) {
+                if ((!settings.chatHistory[value.identifier] || settings.chatHistory[value.identifier].length === 0) && time + 600000 < now) {
                     // 10 minutes of inactivity
                     settings.chatHistory[value.identifier] = [];
                     delete settings.activeContacts[key];
@@ -307,7 +311,7 @@ function pingedByUser(messageJson) {
             }
             if (!settings.activeContacts[key]) {
                 settings.activeContacts[key] = value;
-            } else if (value.time < settings.activeContacts[key].time) {
+            } else if (new Date(value.time).getTime() < new Date(settings.activeContacts[key].time).getTime()) {
                 continue;
             } else {
                 settings.activeContacts[key].time = value.time;
