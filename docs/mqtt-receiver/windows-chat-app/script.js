@@ -141,6 +141,10 @@ function ckeckChatStatus() {
                     // 10 minutes of inactivity
                     settings.chatHistory[value.identifier] = [];
                     delete settings.activeContacts[key];
+                    if (activeChatId === key) {
+                        activeChatId = 'HARD_CODED_CHATROOM';
+                        selectChat(activeChatId);
+                    }
                 }
             }
         }
