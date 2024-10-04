@@ -68,6 +68,7 @@ body {
 .chat-area {
     flex-grow: 1;
     max-height: calc(90svh - 330px);
+    min-width: 388.328px;
 }
 .contacts-area {
     height: 150px;
