@@ -20,7 +20,7 @@ const defaultSettings = {
         }
     },
     blockedUuids: [],
-    frequencyUsed: `${window.location.href}`
+    frequencyUsed: false ? `${window.location.href}` : `https://oldmartijntje.github.io/localNodeBox/mqtt-receiver/windows-chat-app/`
 };
 const statusTypes = {
     0: '', // offline
