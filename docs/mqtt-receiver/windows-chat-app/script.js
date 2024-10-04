@@ -249,7 +249,7 @@ function getLastActiveTime(identifier) {
     } else if (contact.status == 1) {
         return 'AFK';
     } else if (contact.status == 0) {
-        const timeDiff = Date.now() - contact.time;
+        const timeDiff = Date.now() - new Date(contact.time).getTime();
         const seconds = timeDiff / 1000;
         if (seconds < 60) {
             return `last seen ${Math.floor(seconds)} seconds ago`;
@@ -291,7 +291,8 @@ function selectChat(chatId) {
         settings.chatHistory[chat.identifier].forEach(message => {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
-            messageElement.innerHTML = `<div class="message"><span class="time">${new Date(message.time).toLocaleTimeString()}</span> ${message.username}: ${message.message}</div>`;
+            messageElement.innerHTML = `<p style="margin:0;color:${message.userId == settings.userId ? "blue": "red"}"><strong>${message.username}</strong>: ${message.message}</p>`;
+            
             chatArea.appendChild(messageElement);
         });
     }
