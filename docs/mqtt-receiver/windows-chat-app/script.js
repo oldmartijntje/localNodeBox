@@ -205,11 +205,11 @@ function ckeckChatStatus() {
 }
 
 function replaceAllNoneAlphaNumeric(str, allowBraces = false) {
-    str = str.toLowerCase();
     if (allowBraces) {
-        return str.replace(/[^a-z0-9_\-\[\]\(\):\/\.\?&= ]/g, '¿');
+        return str.replace(/[^a-zA-Z0-9_\-\[\]\(\):\/\.\?&=!?.,#% ]/g, '¿');
     }
-    return str.replace(/[^a-z0-9_-]/g, '¿');
+    str = str.toLowerCase();
+    return str.replace(/[^a-z0-9_\-\.]/g, '¿');
 }
 
 function renderContacts() {
