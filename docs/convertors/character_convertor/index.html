@@ -60,6 +60,12 @@
                     </div>
                 </div>
                 <button id="addRule" class="btn btn-primary">Add Rule</button>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="casePerfect" checked>
+                    <label class="form-check-label" for="casePerfect">
+                        Case Perfect
+                    </label>
+                </div>
             </div>
             <div class="col-md-6">
                 <h3>Presets</h3>
@@ -67,7 +73,13 @@
                     <option value="">Select a preset</option>
                     <option value="leet">Leet Speak</option>
                     <option value="vowels">Remove Vowels</option>
+                    <option value="lorum ipsum">Ipsum</option>
                 </select>
+                <div class="input-group mb-2">
+                    <input type="text" id="presetName" class="form-control" placeholder="Preset Name">
+                    <button id="savePreset" class="btn btn-primary">Save Preset</button>
+                </div>
+                <button id="removePreset" class="btn btn-danger">Remove Selected Preset</button>
             </div>
         </div>
         <button id="convertBtn" class="btn btn-success btn-lg">Convert</button>
@@ -82,6 +94,10 @@
             const addRuleBtn = document.getElementById('addRule');
             const convertBtn = document.getElementById('convertBtn');
             const presets = document.getElementById('presets');
+            const casePerfect = document.getElementById('casePerfect');
+            const savePresetBtn = document.getElementById('savePreset');
+            const removePresetBtn = document.getElementById('removePreset');
+            const presetNameInput = document.getElementById('presetName');
 
             function addRule() {
                 const ruleDiv = document.createElement('div');
@@ -108,16 +124,34 @@
                 }));
 
                 rules.forEach(rule => {
-                    const regex = new RegExp(rule.from, 'g');
+                    let flags = 'g';
+                    if (!casePerfect.checked) {
+                        flags += 'i';
+                    }
+                    const regex = new RegExp(rule.from, flags);
                     text = text.replace(regex, rule.to);
                 });
 
                 outputText.value = text;
             });
 
+            function loadPresets() {
+                const savedPresets = JSON.parse(localStorage.getItem('localNodeBox-String_Convertor-Presets')) || {};
+                addPresetsToSelect(savedPresets);
+            }
+
+            function addPresetsToSelect(presetList) {
+                Object.keys(presetList).forEach(presetName => {
+                    const option = document.createElement('option');
+                    option.value = presetName;
+                    option.textContent = presetName;
+                    presets.appendChild(option);
+                });
+            }
+
             presets.addEventListener('change', function () {
                 conversionRules.innerHTML = '';
-                var selected = this.value;
+                let selected;
                 switch (this.value) {
                     case 'leet':
                         selected = [['a', '4'], ['e', '3'], ['i', '1'], ['o', '0'], ['s', '5'], ['t', '7']];
@@ -125,21 +159,21 @@
                     case 'vowels':
                         selected = ['a', 'e', 'i', 'o', 'u'];
                         break;
+                    case 'lorum ipsum':
+                        selected = [['1', 'lorem'], ['2', 'ipsum'], ['3', 'dolor'], ['4', 'sit'], ['5', 'amet'], ['6', 'consectetur'], ['7', 'adipiscing'], ['8', 'elit'], ['9', 'sed'], ['0', 'do']];
+                        break;
                     default:
-                        // check if it's a custom preset
+                        const savedPresets = JSON.parse(localStorage.getItem('localNodeBox-String_Convertor-Presets')) || {};
+                        selected = savedPresets[this.value] || lazyLoadedPresets[this.value] || [];
                         break;
                 }
                 selectPreset(selected);
             });
 
-            // Add initial rule
-            addRule();
-
             function selectPreset(preset) {
                 preset.forEach(rule => {
                     addRule();
                     const lastRule = conversionRules.lastElementChild;
-                    console.log(rule);
                     if (typeof rule === 'string') {
                         rule = [rule, ''];
                     }
@@ -150,6 +184,95 @@
                     lastRule.querySelector('.to-string').value = rule[1];
                 });
             }
+
+            savePresetBtn.addEventListener('click', function () {
+                const presetName = presetNameInput.value.trim();
+                if (presetName) {
+                    const rules = Array.from(conversionRules.children).map(rule => [
+                        rule.querySelector('.from-string').value,
+                        rule.querySelector('.to-string').value
+                    ]);
+                    const savedPresets = JSON.parse(localStorage.getItem('localNodeBox-String_Convertor-Presets')) || {};
+                    savedPresets[presetName] = rules;
+                    localStorage.setItem('localNodeBox-String_Convertor-Presets', JSON.stringify(savedPresets));
+
+                    // Add new preset to the select element
+                    const option = document.createElement('option');
+                    option.value = presetName;
+                    option.textContent = presetName;
+                    presets.appendChild(option);
+
+                    presetNameInput.value = '';
+                    alert('Preset saved successfully!');
+                } else {
+                    alert('Please enter a preset name.');
+                }
+            });
+
+            removePresetBtn.addEventListener('click', function () {
+                const selectedPreset = presets.value;
+                if (selectedPreset && selectedPreset !== 'leet' && selectedPreset !== 'vowels') {
+                    const savedPresets = JSON.parse(localStorage.getItem('localNodeBox-String_Convertor-Presets')) || {};
+                    delete savedPresets[selectedPreset];
+                    localStorage.setItem('localNodeBox-String_Convertor-Presets', JSON.stringify(savedPresets));
+
+                    // Remove preset from the select element
+                    presets.remove(presets.selectedIndex);
+
+                    alert('Preset removed successfully!');
+                } else {
+                    alert('Please select a custom preset to remove.');
+                }
+            });
+
+            const lazyLoadedPresets = {
+                "Anti_AI": [
+                    ["A", "А"],
+                    ["B", "В"],
+                    ["C", "С"],
+                    ["E", "Е"],
+                    ["H", "Н"],
+                    ["M", "М"],
+                    ["O", "О"],
+                    ["P", "Р"],
+                    ["S", "Ѕ"],
+                    ["T", "Т"],
+                    ["X", "Х"],
+                    ["a", "а"],
+                    ["c", "с"],
+                    ["e", "е"],
+                    ["o", "о"],
+                    ["p", "р"],
+                    ["s", "ѕ"],
+                    ["x", "х"]
+                ],
+                "Reverse-Anti_AI": [
+                    ["А", "A"],
+                    ["В", "B"],
+                    ["С", "C"],
+                    ["Е", "E"],
+                    ["Н", "H"],
+                    ["М", "M"],
+                    ["О", "O"],
+                    ["Р", "P"],
+                    ["Ѕ", "S"],
+                    ["Т", "T"],
+                    ["Х", "X"],
+                    ["а", "a"],
+                    ["с", "c"],
+                    ["е", "e"],
+                    ["о", "o"],
+                    ["р", "p"],
+                    ["ѕ", "s"],
+                    ["х", "x"]
+                ]
+            }
+            addPresetsToSelect(lazyLoadedPresets)
+
+
+
+            // Load saved presets
+            loadPresets();
         });
     </script>
 </body>
