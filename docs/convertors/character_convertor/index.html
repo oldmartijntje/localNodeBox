@@ -89,6 +89,14 @@
             </div>
         </div>
         <button id="convertBtn" class="btn btn-success btn-lg">Convert</button>
+
+        <!-- Add new buttons for import and export -->
+        <div class="mt-3">
+            <button id="exportJSON" class="btn btn-info">Export as JSON</button>
+            <button id="exportText" class="btn btn-info">Export as Text</button>
+            <input type="file" id="importFile" style="display: none;">
+            <button id="importBtn" class="btn btn-warning">Import Configuration</button>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
@@ -273,13 +281,96 @@
                     ["х", "x"]
                 ]
             }
-            addPresetsToSelect(lazyLoadedPresets)
 
+            const exportJSONBtn = document.getElementById('exportJSON');
+            const exportTextBtn = document.getElementById('exportText');
+            const importBtn = document.getElementById('importBtn');
+            const importFile = document.getElementById('importFile');
 
+            function getCurrentConfig() {
+                return Array.from(conversionRules.children).map(rule => ({
+                    from: rule.querySelector('.from-string').value,
+                    to: rule.querySelector('.to-string').value
+                }));
+            }
+
+            exportJSONBtn.addEventListener('click', function () {
+                const config = getCurrentConfig();
+                const jsonString = JSON.stringify(config, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'string_converter_config.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            exportTextBtn.addEventListener('click', function () {
+                const config = getCurrentConfig();
+                const textContent = config.map(rule => `${rule.from}\t${rule.to}`).join('\n');
+                const blob = new Blob([textContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'string_converter_config.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            importBtn.addEventListener('click', function () {
+                importFile.click();
+            });
+
+            importBtn.addEventListener('click', function () {
+                importFile.value = ''; // Reset the file input before opening the file dialog
+                importFile.click();
+            });
+
+            importFile.addEventListener('change', function (event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    let config;
+                    if (file.name.endsWith('.json')) {
+                        config = JSON.parse(e.target.result);
+                        console.log(config)
+                    } else if (file.name.endsWith('.txt')) {
+                        config = e.target.result.split('\n').map(line => {
+                            const [from, to] = line.split('\t');
+                            return { from, to };
+                        });
+                    } else {
+                        alert('Invalid file type. Please select a .json file.');
+                    }
+
+                    // Clear existing rules
+                    conversionRules.innerHTML = '';
+
+                    // Add imported rules
+                    config.forEach(rule => {
+                        addRule();
+                        const lastRule = conversionRules.lastElementChild;
+                        lastRule.querySelector('.from-string').value = rule.from;
+                        lastRule.querySelector('.to-string').value = rule.to;
+                    });
+                };
+
+                if (file.name.endsWith('.json')) {
+                    reader.readAsText(file);
+                } else {
+                    reader.readAsText(file);
+                }
+            });
+
+            addPresetsToSelect(lazyLoadedPresets);
 
             // Load saved presets
             loadPresets();
         });
+
     </script>
 </body>
 
