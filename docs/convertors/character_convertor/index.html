@@ -67,6 +67,7 @@
                 </div>
                 <button id="addRule" class="btn btn-primary">Add Rule</button>
                 <button id="suffleRules" class="btn btn-danger">Shuffle Rules</button>
+                <button id="flipRules" class="btn btn-info">Flip Rules</button>
                 <div class="form-check mt-2">
                     <input class="form-check-input" type="checkbox" id="casePerfect" checked>
                     <label class="form-check-label" for="casePerfect">
@@ -114,6 +115,7 @@
             const removePresetBtn = document.getElementById('removePreset');
             const presetNameInput = document.getElementById('presetName');
             const shuffleRulesBtn = document.getElementById('suffleRules');
+            const flipRulesBtn = document.getElementById('flipRules');
 
             function addRule() {
                 const ruleDiv = document.createElement('div');
@@ -129,6 +131,18 @@
                     conversionRules.removeChild(ruleDiv);
                 });
             }
+
+            flipRulesBtn.addEventListener('click', function () {
+                let config = getCurrentConfig();
+                config = config.map(rule => ({ from: rule.to, to: rule.from }));
+                conversionRules.innerHTML = '';
+                config.forEach(rule => {
+                    addRule();
+                    const lastRule = conversionRules.lastElementChild;
+                    lastRule.querySelector('.from-string').value = rule.from;
+                    lastRule.querySelector('.to-string').value = rule.to;
+                });
+            });
 
             shuffleRulesBtn.addEventListener('click', function () {
                 let config = getCurrentConfig();
