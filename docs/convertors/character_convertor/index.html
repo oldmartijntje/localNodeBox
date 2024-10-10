@@ -308,7 +308,15 @@
 
             exportTextBtn.addEventListener('click', function () {
                 const config = getCurrentConfig();
-                const textContent = config.map(rule => `${rule.from}\t${rule.to}`).join('\n');
+                const configuredConversionRules = config.map(rule => `${rule.from} = ${rule.to}`);
+                let finalString = '';
+                for (let i = 0; i < configuredConversionRules.length; i++) {
+                    finalString += configuredConversionRules[i];
+                    if (i < configuredConversionRules.length - 1) {
+                        finalString += (i + 1) % Math.ceil(config.length / 10) === 0 ? '\n' : '   ';
+                    }
+                }
+                const textContent = finalString;
                 const blob = new Blob([textContent], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -337,11 +345,6 @@
                     if (file.name.endsWith('.json')) {
                         config = JSON.parse(e.target.result);
                         console.log(config)
-                    } else if (file.name.endsWith('.txt')) {
-                        config = e.target.result.split('\n').map(line => {
-                            const [from, to] = line.split('\t');
-                            return { from, to };
-                        });
                     } else {
                         alert('Invalid file type. Please select a .json file.');
                     }
