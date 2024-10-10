@@ -66,6 +66,7 @@
                     </div>
                 </div>
                 <button id="addRule" class="btn btn-primary">Add Rule</button>
+                <button id="suffleRules" class="btn btn-danger">Shuffle Rules</button>
                 <div class="form-check mt-2">
                     <input class="form-check-input" type="checkbox" id="casePerfect" checked>
                     <label class="form-check-label" for="casePerfect">
@@ -112,6 +113,7 @@
             const savePresetBtn = document.getElementById('savePreset');
             const removePresetBtn = document.getElementById('removePreset');
             const presetNameInput = document.getElementById('presetName');
+            const shuffleRulesBtn = document.getElementById('suffleRules');
 
             function addRule() {
                 const ruleDiv = document.createElement('div');
@@ -127,6 +129,25 @@
                     conversionRules.removeChild(ruleDiv);
                 });
             }
+
+            shuffleRulesBtn.addEventListener('click', function () {
+                let config = getCurrentConfig();
+                const allTo = config.map(rule => rule.to);
+                config.forEach(element => {
+                    const randomIndex = Math.floor(Math.random() * allTo.length);
+                    element.to = allTo[randomIndex];
+                    allTo.splice(randomIndex, 1);
+                });
+                conversionRules.innerHTML = '';
+                config.forEach(rule => {
+                    addRule();
+                    const lastRule = conversionRules.lastElementChild;
+                    lastRule.querySelector('.from-string').value = rule.from;
+                    lastRule.querySelector('.to-string').value = rule.to;
+                });
+
+
+            });
 
             addRuleBtn.addEventListener('click', addRule);
 
@@ -313,7 +334,7 @@
                 for (let i = 0; i < configuredConversionRules.length; i++) {
                     finalString += configuredConversionRules[i];
                     if (i < configuredConversionRules.length - 1) {
-                        finalString += (i + 1) % Math.ceil(config.length / 10) === 0 ? '\n' : '   ';
+                        finalString += (i + 1) % Math.ceil(config.length / 10) === 0 ? '\n' : '     ';
                     }
                 }
                 const textContent = finalString;
