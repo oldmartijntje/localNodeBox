@@ -11,7 +11,28 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Character Counter</a>
+            <a class="navbar-brand" href="../../">OldMartijntje's Toolkit📦</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="../../">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="https://oldmartijntje.nl">Main🦖</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="https://docs.oldmartijntje.nl">Docs🌵</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank"
+                            href="https://github.com/oldmartijntje/localNodeBox">Github</a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
@@ -43,13 +64,20 @@
             charCount.textContent = text.length;
             wordCount.textContent = text.trim().split(/\s+/).filter(word => word.length > 0).length;
 
-            let codes = '';
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const code = char.charCodeAt(0);
-                codes += `${char} : ${code}\n`;
+            const charMap = new Map();
+            for (let char of text) {
+                charMap.set(char, (charMap.get(char) || 0) + 1);
             }
-            charCodes.textContent = codes;
+
+            let codes = '';
+            for (let [char, count] of charMap) {
+                let code = char.codePointAt(0).toString(16).toUpperCase();
+                while (code.length < 4) {
+                    code = '0' + code;
+                }
+                codes += `${char} * ${count} : <a href="https://unicodeplus.com/U+${code}" target="_blank">U+${code}</a>\n`;
+            }
+            charCodes.innerHTML = codes;
         }
     </script>
 </body>
