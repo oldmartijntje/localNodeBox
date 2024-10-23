@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://i.imgur.com/1noWzDB.png" type="image/x-icon">
+    <meta property="og:image" content="https://i.imgur.com/NeU2I13.png">
+    <title>Text Versioning</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="description" content="A simple tool where you can create your own 'git'-ish versioning of text.">
+    <meta name="keywords" content="patcher, text, versioning, tool">
+    <meta name="author" content="OldMartijntje">
+    <style>
+        .diff-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="../../">OldMartijntje's Toolkit📦</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="../../">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="https://oldmartijntje.nl">Main🦖</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="https://docs.oldmartijntje.nl">Docs🌵</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank"
+                            href="https://github.com/oldmartijntje/localNodeBox">Github</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="diff-container">
+        <div class="mb-3">
+            <label class="form-label">Version 1:</label>
+            <input type="text" id="version1" class="form-control" value="hello world">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Version 2:</label>
+            <input type="text" id="version2" class="form-control" value="well hello there beautiful world!">
+        </div>
+
+        <button onclick="generateDiff()" class="btn btn-primary mb-3">Generate Diff</button>
+
+        <div class="mb-3">
+            <label class="form-label">Diff Instructions:</label>
+            <pre id="diffInstructions"></pre>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Test Input:</label>
+            <input type="text" id="testInput" class="form-control">
+        </div>
+
+        <button onclick="applyDiff()" class="btn btn-success mb-3">Apply Diff</button>
+
+        <div class="mb-3">
+            <label class="form-label">Result:</label>
+            <input type="text" id="testOutput" class="form-control" readonly>
+        </div>
+    </div>
+
+    <script>
+        // Find the longest common subsequence of words
+        function findLCS(words1, words2) {
+            const m = words1.length;
+            const n = words2.length;
+            const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+
+            // Build LCS matrix
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    if (words1[i - 1] === words2[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    } else {
+                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                    }
+                }
+            }
+
+            // Backtrack to find the sequence
+            const lcs = [];
+            let i = m, j = n;
+            while (i > 0 && j > 0) {
+                if (words1[i - 1] === words2[j - 1]) {
+                    lcs.unshift({
+                        word: words1[i - 1],
+                        pos1: i - 1,
+                        pos2: j - 1
+                    });
+                    i--;
+                    j--;
+                } else if (dp[i - 1][j] > dp[i][j - 1]) {
+                    i--;
+                } else {
+                    j--;
+                }
+            }
+            return lcs;
+        }
+
+        function generateDiff() {
+            const version1 = document.getElementById('version1').value;
+            const version2 = document.getElementById('version2').value;
+
+            // Split into words, preserving spaces and punctuation
+            const splitWithSpaces = (text) => {
+                const parts = [];
+                let currentWord = '';
+                let currentSpaces = '';
+
+                for (let char of text) {
+                    if (/\s/.test(char)) {
+                        if (currentWord) {
+                            parts.push(currentWord);
+                            currentWord = '';
+                        }
+                        currentSpaces += char;
+                    } else if (/[.,!?;]/.test(char)) {
+                        if (currentWord) {
+                            parts.push(currentWord);
+                            currentWord = '';
+                        }
+                        if (currentSpaces) {
+                            parts.push(currentSpaces);
+                            currentSpaces = '';
+                        }
+                        parts.push(char);
+                    } else {
+                        if (currentSpaces) {
+                            parts.push(currentSpaces);
+                            currentSpaces = '';
+                        }
+                        currentWord += char;
+                    }
+                }
+                if (currentWord) parts.push(currentWord);
+                if (currentSpaces) parts.push(currentSpaces);
+                return parts;
+            };
+
+            const parts1 = splitWithSpaces(version1);
+            const parts2 = splitWithSpaces(version2);
+
+            // Find longest common subsequence of words
+            const commonSequence = findLCS(parts1, parts2);
+
+            const instructions = [];
+            let lastPos1 = 0;
+            let lastPos2 = 0;
+
+            // Process each segment of matching words
+            for (let i = 0; i < commonSequence.length; i++) {
+                const match = commonSequence[i];
+
+                // Calculate positions in original strings
+                const pos1 = version1.indexOf(match.word, lastPos1);
+                const pos2 = version2.indexOf(match.word, lastPos2);
+
+                // Delete content before match in version1
+                if (pos1 > lastPos1) {
+                    instructions.push({
+                        type: 'delete',
+                        position: lastPos1,
+                        length: pos1 - lastPos1
+                    });
+                }
+
+                // Insert content before match in version2
+                if (pos2 > lastPos2) {
+                    instructions.push({
+                        type: 'insert',
+                        position: lastPos1,
+                        content: version2.substring(lastPos2, pos2)
+                    });
+                }
+
+                lastPos1 = pos1 + match.word.length;
+                lastPos2 = pos2 + match.word.length;
+            }
+
+            // Handle remaining content after last match
+            if (lastPos1 < version1.length) {
+                instructions.push({
+                    type: 'delete',
+                    position: lastPos1,
+                    length: version1.length - lastPos1
+                });
+            }
+
+            if (lastPos2 < version2.length) {
+                instructions.push({
+                    type: 'insert',
+                    position: lastPos1,
+                    content: version2.substring(lastPos2)
+                });
+            }
+
+            document.getElementById('diffInstructions').textContent =
+                JSON.stringify(instructions, null, 2);
+        }
+
+        function applyDiff() {
+            try {
+                const testInput = document.getElementById('testInput').value;
+                const instructions = JSON.parse(
+                    document.getElementById('diffInstructions').textContent
+                );
+
+                // Apply instructions in reverse order to maintain positions
+                let result = testInput;
+                for (let i = instructions.length - 1; i >= 0; i--) {
+                    const instruction = instructions[i];
+                    if (instruction.type === 'delete') {
+                        result = result.slice(0, instruction.position) +
+                            result.slice(instruction.position + instruction.length);
+                    } else if (instruction.type === 'insert') {
+                        result = result.slice(0, instruction.position) +
+                            instruction.content +
+                            result.slice(instruction.position);
+                    }
+                }
+
+                document.getElementById('testOutput').value = result;
+            } catch (error) {
+                document.getElementById('testOutput').value =
+                    'Error applying diff instructions';
+            }
+        }
+    </script>
+</body>
+
+</html>
