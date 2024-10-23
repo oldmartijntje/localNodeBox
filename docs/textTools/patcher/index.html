@@ -45,6 +45,20 @@
             border-color: #0d6efd;
             background: #e9ecef;
         }
+
+        .text-input {
+            width: 100%;
+            min-height: 150px;
+            margin-bottom: 10px;
+        }
+
+        .nav-tabs {
+            margin-bottom: 15px;
+        }
+
+        .tab-content {
+            padding: 15px 0;
+        }
     </style>
 
 </head>
@@ -78,62 +92,137 @@
     </nav>
     <div class="container">
         <!-- Diff Creator Section -->
-        <div class="tool-section">
-            <h2>Create Patch File</h2>
+        <div class="container">
+            <!-- Diff Creator Section -->
+            <div class="tool-section">
+                <h2>Create Patch File</h2>
 
-            <div class="mb-3">
-                <label class="form-label">Version 1 File:</label>
-                <div class="drag-area" id="v1DragArea" ondrop="dropHandler(event, 'v1')"
-                    ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
-                    <div>Drag & drop or click to select Version 1 file</div>
-                    <input type="file" id="v1File" style="display: none" onchange="handleFileSelect(event, 'v1')">
+                <ul class="nav nav-tabs" id="inputTypeTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="files-tab" data-bs-toggle="tab" data-bs-target="#files"
+                            type="button" role="tab">File Upload</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button"
+                            role="tab">Direct Text</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="inputTypeContent">
+                    <!-- File Upload Tab -->
+                    <div class="tab-pane fade show active" id="files" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label">Version 1 File:</label>
+                            <div class="drag-area" id="v1DragArea" ondrop="dropHandler(event, 'v1')"
+                                ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                                <div>Drag & drop or click to select Version 1 file</div>
+                                <input type="file" id="v1File" style="display: none"
+                                    onchange="handleFileSelect(event, 'v1')">
+                            </div>
+                            <div id="v1Info" class="file-info"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Version 2 File:</label>
+                            <div class="drag-area" id="v2DragArea" ondrop="dropHandler(event, 'v2')"
+                                ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                                <div>Drag & drop or click to select Version 2 file</div>
+                                <input type="file" id="v2File" style="display: none"
+                                    onchange="handleFileSelect(event, 'v2')">
+                            </div>
+                            <div id="v2Info" class="file-info"></div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Text Tab -->
+                    <div class="tab-pane fade" id="text" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label">Version 1 Text:</label>
+                            <textarea class="form-control text-input" id="v1Text"
+                                placeholder="Enter original text here..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Version 2 Text:</label>
+                            <textarea class="form-control text-input" id="v2Text"
+                                placeholder="Enter modified text here..."></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div id="v1Info" class="file-info"></div>
+
+                <button onclick="generatePatch()" class="btn btn-primary mb-3">Generate Patch File</button>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Version 2 File:</label>
-                <div class="drag-area" id="v2DragArea" ondrop="dropHandler(event, 'v2')"
-                    ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
-                    <div>Drag & drop or click to select Version 2 file</div>
-                    <input type="file" id="v2File" style="display: none" onchange="handleFileSelect(event, 'v2')">
-                </div>
-                <div id="v2Info" class="file-info"></div>
-            </div>
+            <!-- Patch Applier Section -->
+            <div class="tool-section">
+                <h2>Apply Patch File</h2>
 
-            <button onclick="generatePatch()" class="btn btn-primary mb-3">Generate Patch File</button>
+                <ul class="nav nav-tabs" id="applyTypeTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="apply-files-tab" data-bs-toggle="tab"
+                            data-bs-target="#apply-files" type="button" role="tab">File Upload</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="apply-text-tab" data-bs-toggle="tab" data-bs-target="#apply-text"
+                            type="button" role="tab">Direct Text</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="applyTypeContent">
+                    <!-- File Upload Tab -->
+                    <div class="tab-pane fade show active" id="apply-files" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label">Original File:</label>
+                            <div class="drag-area" id="originalDragArea" ondrop="dropHandler(event, 'original')"
+                                ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                                <div>Drag & drop or click to select original file</div>
+                                <input type="file" id="originalFile" style="display: none"
+                                    onchange="handleFileSelect(event, 'original')">
+                            </div>
+                            <div id="originalInfo" class="file-info"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Patch File (.mapatch):</label>
+                            <div class="drag-area" id="patchDragArea" ondrop="dropHandler(event, 'patch')"
+                                ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                                <div>Drag & drop or click to select .mapatch file</div>
+                                <input type="file" id="patchFile" style="display: none" accept=".mapatch"
+                                    onchange="handleFileSelect(event, 'patch')">
+                            </div>
+                            <div id="patchInfo" class="file-info"></div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Text Tab -->
+                    <div class="tab-pane fade" id="apply-text" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label">Original Text:</label>
+                            <textarea class="form-control text-input" id="originalText"
+                                placeholder="Enter original text here..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Patch File (.mapatch):</label>
+                            <div class="drag-area" id="textPatchDragArea" ondrop="dropHandler(event, 'textPatch')"
+                                ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                                <div>Drag & drop or click to select .mapatch file</div>
+                                <input type="file" id="textPatchFile" style="display: none" accept=".mapatch"
+                                    onchange="handleFileSelect(event, 'textPatch')">
+                            </div>
+                            <div id="textPatchInfo" class="file-info"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="applyPatch()" class="btn btn-success mb-3">Apply Patch</button>
+                <div id="resultContainer"></div>
+            </div>
         </div>
 
-        <!-- Patch Applier Section -->
-        <div class="tool-section">
-            <h2>Apply Patch File</h2>
-
-            <div class="mb-3">
-                <label class="form-label">Original File:</label>
-                <div class="drag-area" id="originalDragArea" ondrop="dropHandler(event, 'original')"
-                    ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
-                    <div>Drag & drop or click to select original file</div>
-                    <input type="file" id="originalFile" style="display: none"
-                        onchange="handleFileSelect(event, 'original')">
-                </div>
-                <div id="originalInfo" class="file-info"></div>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Patch File (.mapatch):</label>
-                <div class="drag-area" id="patchDragArea" ondrop="dropHandler(event, 'patch')"
-                    ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
-                    <div>Drag & drop or click to select .mapatch file</div>
-                    <input type="file" id="patchFile" style="display: none" accept=".mapatch"
-                        onchange="handleFileSelect(event, 'patch')">
-                </div>
-                <div id="patchInfo" class="file-info"></div>
-            </div>
-
-            <button onclick="applyPatch()" class="btn btn-success mb-3">Apply Patch</button>
-        </div>
+        <button onclick="applyPatch()" class="btn btn-success mb-3">Apply Patch</button>
     </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // File handling state
         const fileContents = {
@@ -323,7 +412,22 @@
         }
 
         function generatePatch() {
-            if (!fileContents.v1 || !fileContents.v2) {
+            const isTextMode = document.getElementById('text-tab').classList.contains('active');
+
+            if (isTextMode) {
+                const v1Text = document.getElementById('v1Text').value;
+                const v2Text = document.getElementById('v2Text').value;
+
+                if (!v1Text || !v2Text) {
+                    alert('Please enter both version texts');
+                    return;
+                }
+
+                fileContents.v1 = v1Text;
+                fileContents.v2 = v2Text;
+                fileNames.v1 = 'version1.txt';
+                fileNames.v2 = 'version2.txt';
+            } else if (!fileContents.v1 || !fileContents.v2) {
                 alert('Please select both version files');
                 return;
             }
@@ -341,8 +445,7 @@
             };
 
             // Create and download the patch file
-            const blob = new Blob([JSON.stringify(patchData, null, 2)],
-                { type: 'application/x-mapatch' });
+            const blob = new Blob([JSON.stringify(patchData, null, 2)], { type: 'application/x-mapatch' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -354,48 +457,78 @@
         }
 
         function applyPatch() {
-            if (!fileContents.original || !fileContents.patch) {
-                alert('Please select both original and patch files');
-                return;
+            const isTextMode = document.getElementById('apply-text-tab').classList.contains('active');
+            let originalContent, patchContent;
+
+            if (isTextMode) {
+                originalContent = document.getElementById('originalText').value;
+                if (!originalContent || !fileContents.textPatch) {
+                    alert('Please enter original text and select a patch file');
+                    return;
+                }
+                patchContent = fileContents.textPatch;
+            } else {
+                if (!fileContents.original || !fileContents.patch) {
+                    alert('Please select both original and patch files');
+                    return;
+                }
+                originalContent = fileContents.original;
+                patchContent = fileContents.patch;
             }
 
             try {
-                const patchData = JSON.parse(fileContents.patch);
+                const patchData = JSON.parse(patchContent);
 
                 // Validate patch format
                 if (patchData.format !== 'mapatch-1.0') {
                     throw new Error('Invalid patch format');
                 }
-                if (fileContents.original.length != patchData.baseLength) {
-                    if (!confirm('The original file length does not match the base length in the patch. Continue?')) {
+                if (originalContent.length != patchData.baseLength) {
+                    if (!confirm('The original text length does not match the base length in the patch. Continue?')) {
                         return;
                     }
                 }
 
+                // Sort instructions by position to ensure correct ordering
+                const sortedInstructions = [...patchData.instructions].sort((a, b) => a.position - b.position);
+
+                let result = originalContent;
+                let offset = 0;
+
                 // Apply instructions
-                let result = fileContents.original;
-                for (let i = patchData.instructions.length - 1; i >= 0; i--) {
-                    const instruction = patchData.instructions[i];
+                for (const instruction of sortedInstructions) {
+                    const adjustedPosition = instruction.position + offset;
+
                     if (instruction.type === 'delete') {
-                        result = result.slice(0, instruction.position) +
-                            result.slice(instruction.position + instruction.length);
+                        result = result.slice(0, adjustedPosition) + result.slice(adjustedPosition + instruction.length);
+                        offset -= instruction.length;
                     } else if (instruction.type === 'insert') {
-                        result = result.slice(0, instruction.position) +
-                            instruction.content +
-                            result.slice(instruction.position);
+                        result = result.slice(0, adjustedPosition) + instruction.content + result.slice(adjustedPosition);
+                        offset += instruction.content.length;
                     }
                 }
 
-                // Create and download the result file
-                const blob = new Blob([result], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'result.txt';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                if (isTextMode) {
+                    // Display result in a new textarea
+                    const resultContainer = document.getElementById('resultContainer');
+                    resultContainer.innerHTML = `
+                        <div class="mb-3">
+                            <label class="form-label">Result:</label>
+                            <textarea class="form-control text-input" readonly>${result}</textarea>
+                        </div>
+                    `;
+                } else {
+                    // Download as file
+                    const blob = new Blob([result], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'result.txt';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
 
             } catch (error) {
                 alert('Error applying patch: ' + error.message);
