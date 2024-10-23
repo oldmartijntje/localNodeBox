@@ -493,18 +493,25 @@
                 const sortedInstructions = [...patchData.instructions].sort((a, b) => a.position - b.position);
 
                 let result = originalContent;
-                let offset = 0;
+                let currentOffset = 0;
+                let posistionOfCalculatedOffset = -1;
+                let nextOffset = 0;
+                // sort on position
+                sortedInstructions.sort((a, b) => a.position - b.position);
 
                 // Apply instructions
                 for (const instruction of sortedInstructions) {
-                    const adjustedPosition = instruction.position + offset;
-
+                    if (posistionOfCalculatedOffset != instruction.position) {
+                        posistionOfCalculatedOffset = instruction.position;
+                        currentOffset = nextOffset;
+                    }
+                    const adjustedPosition = instruction.position + currentOffset;
                     if (instruction.type === 'delete') {
                         result = result.slice(0, adjustedPosition) + result.slice(adjustedPosition + instruction.length);
-                        offset -= instruction.length;
+                        nextOffset = nextOffset - instruction.length;
                     } else if (instruction.type === 'insert') {
                         result = result.slice(0, adjustedPosition) + instruction.content + result.slice(adjustedPosition);
-                        offset += instruction.content.length;
+                        nextOffset = nextOffset + instruction.content.length;
                     }
                 }
 
