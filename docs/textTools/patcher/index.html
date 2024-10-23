@@ -142,6 +142,12 @@
             original: null,
             patch: null
         };
+        const fileNames = {
+            v1: null,
+            v2: null,
+            original: null,
+            patch: null
+        };
 
         // Make drag areas clickable
         document.querySelectorAll('.drag-area').forEach(area => {
@@ -185,6 +191,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 fileContents[fileType] = e.target.result;
+                fileNames[fileType] = file.name;
                 document.getElementById(`${fileType}Info`).textContent =
                     `${file.name} (${file.size} bytes)`;
             };
@@ -327,6 +334,9 @@
             const patchData = {
                 format: 'mapatch-1.0',
                 timestamp: new Date().toISOString(),
+                file1type: fileNames.v1.split('.').pop(),
+                file2type: fileNames.v2.split('.').pop(),
+                baseLength: fileContents.v1.length,
                 instructions: instructions
             };
 
@@ -355,6 +365,11 @@
                 // Validate patch format
                 if (patchData.format !== 'mapatch-1.0') {
                     throw new Error('Invalid patch format');
+                }
+                if (fileContents.original.length != patchData.baseLength) {
+                    if (!confirm('The original file length does not match the base length in the patch. Continue?')) {
+                        return;
+                    }
                 }
 
                 // Apply instructions
