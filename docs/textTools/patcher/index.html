@@ -24,16 +24,26 @@
             margin-bottom: 20px;
         }
 
-        pre {
-            background-color: #fff;
-            padding: 15px;
+        .file-info {
+            margin: 10px 0;
+            padding: 10px;
+            background: #fff;
             border-radius: 4px;
-            white-space: pre-wrap;
             border: 1px solid #dee2e6;
         }
 
-        h2 {
-            margin-bottom: 20px;
+        .drag-area {
+            border: 2px dashed #adb5bd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .drag-area.dragover {
+            border-color: #0d6efd;
+            background: #e9ecef;
         }
     </style>
 
@@ -67,50 +77,121 @@
         </div>
     </nav>
     <div class="container">
-        <!-- Diff Generator Section -->
+        <!-- Diff Creator Section -->
         <div class="tool-section">
-            <h2>Diff Generator</h2>
+            <h2>Create Patch File</h2>
+
             <div class="mb-3">
-                <label class="form-label">Version 1:</label>
-                <input type="text" id="version1" class="form-control" value="hello world">
+                <label class="form-label">Version 1 File:</label>
+                <div class="drag-area" id="v1DragArea" ondrop="dropHandler(event, 'v1')"
+                    ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                    <div>Drag & drop or click to select Version 1 file</div>
+                    <input type="file" id="v1File" style="display: none" onchange="handleFileSelect(event, 'v1')">
+                </div>
+                <div id="v1Info" class="file-info"></div>
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Version 2:</label>
-                <input type="text" id="version2" class="form-control" value="well hello there beautiful world!">
+                <label class="form-label">Version 2 File:</label>
+                <div class="drag-area" id="v2DragArea" ondrop="dropHandler(event, 'v2')"
+                    ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                    <div>Drag & drop or click to select Version 2 file</div>
+                    <input type="file" id="v2File" style="display: none" onchange="handleFileSelect(event, 'v2')">
+                </div>
+                <div id="v2Info" class="file-info"></div>
             </div>
 
-            <button onclick="generateDiff()" class="btn btn-primary mb-3">Generate Diff</button>
-
-            <div class="mb-3">
-                <label class="form-label">Diff Instructions:</label>
-                <pre id="diffInstructions"></pre>
-            </div>
+            <button onclick="generatePatch()" class="btn btn-primary mb-3">Generate Patch File</button>
         </div>
 
-        <!-- Diff Tester Section -->
+        <!-- Patch Applier Section -->
         <div class="tool-section">
-            <h2>Diff Tester</h2>
+            <h2>Apply Patch File</h2>
+
             <div class="mb-3">
-                <label class="form-label">Diff Instructions (JSON):</label>
-                <textarea id="testInstructions" class="form-control" rows="6"></textarea>
+                <label class="form-label">Original File:</label>
+                <div class="drag-area" id="originalDragArea" ondrop="dropHandler(event, 'original')"
+                    ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                    <div>Drag & drop or click to select original file</div>
+                    <input type="file" id="originalFile" style="display: none"
+                        onchange="handleFileSelect(event, 'original')">
+                </div>
+                <div id="originalInfo" class="file-info"></div>
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Input Text:</label>
-                <input type="text" id="testInput" class="form-control">
+                <label class="form-label">Patch File (.dpatch):</label>
+                <div class="drag-area" id="patchDragArea" ondrop="dropHandler(event, 'patch')"
+                    ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
+                    <div>Drag & drop or click to select .dpatch file</div>
+                    <input type="file" id="patchFile" style="display: none" accept=".dpatch"
+                        onchange="handleFileSelect(event, 'patch')">
+                </div>
+                <div id="patchInfo" class="file-info"></div>
             </div>
 
-            <button onclick="applyDiff()" class="btn btn-success mb-3">Apply Diff</button>
-
-            <div class="mb-3">
-                <label class="form-label">Result:</label>
-                <input type="text" id="testOutput" class="form-control" readonly>
-            </div>
+            <button onclick="applyPatch()" class="btn btn-success mb-3">Apply Patch</button>
         </div>
     </div>
 
     <script>
+        // File handling state
+        const fileContents = {
+            v1: null,
+            v2: null,
+            original: null,
+            patch: null
+        };
+
+        // Make drag areas clickable
+        document.querySelectorAll('.drag-area').forEach(area => {
+            area.addEventListener('click', () => {
+                const input = area.querySelector('input[type="file"]');
+                input.click();
+            });
+        });
+
+        // Drag and drop handlers
+        function dragOverHandler(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function dragLeaveHandler(event) {
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function dropHandler(event, fileType) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+            const file = event.dataTransfer.files[0];
+            handleFile(file, fileType);
+        }
+
+        function handleFileSelect(event, fileType) {
+            const file = event.target.files[0];
+            handleFile(file, fileType);
+        }
+
+        function handleFile(file, fileType) {
+            if (!file) return;
+
+            // Validate patch file extension
+            if (fileType === 'patch' && !file.name.endsWith('.dpatch')) {
+                alert('Please select a .dpatch file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                fileContents[fileType] = e.target.result;
+                document.getElementById(`${fileType}Info`).textContent =
+                    `${file.name} (${file.size} bytes)`;
+            };
+            reader.readAsText(file);
+        }
+
+        // Diff generation logic
         function findLCS(words1, words2) {
             const m = words1.length;
             const n = words2.length;
@@ -146,10 +227,7 @@
             return lcs;
         }
 
-        function generateDiff() {
-            const version1 = document.getElementById('version1').value;
-            const version2 = document.getElementById('version2').value;
-
+        function generateDiffInstructions(text1, text2) {
             const splitWithSpaces = (text) => {
                 const parts = [];
                 let currentWord = '';
@@ -185,9 +263,8 @@
                 return parts;
             };
 
-            const parts1 = splitWithSpaces(version1);
-            const parts2 = splitWithSpaces(version2);
-
+            const parts1 = splitWithSpaces(text1);
+            const parts2 = splitWithSpaces(text2);
             const commonSequence = findLCS(parts1, parts2);
 
             const instructions = [];
@@ -196,9 +273,8 @@
 
             for (let i = 0; i < commonSequence.length; i++) {
                 const match = commonSequence[i];
-
-                const pos1 = version1.indexOf(match.word, lastPos1);
-                const pos2 = version2.indexOf(match.word, lastPos2);
+                const pos1 = text1.indexOf(match.word, lastPos1);
+                const pos2 = text2.indexOf(match.word, lastPos2);
 
                 if (pos1 > lastPos1) {
                     instructions.push({
@@ -212,7 +288,7 @@
                     instructions.push({
                         type: 'insert',
                         position: lastPos1,
-                        content: version2.substring(lastPos2, pos2)
+                        content: text2.substring(lastPos2, pos2)
                     });
                 }
 
@@ -220,38 +296,71 @@
                 lastPos2 = pos2 + match.word.length;
             }
 
-            if (lastPos1 < version1.length) {
+            if (lastPos1 < text1.length) {
                 instructions.push({
                     type: 'delete',
                     position: lastPos1,
-                    length: version1.length - lastPos1
+                    length: text1.length - lastPos1
                 });
             }
 
-            if (lastPos2 < version2.length) {
+            if (lastPos2 < text2.length) {
                 instructions.push({
                     type: 'insert',
                     position: lastPos1,
-                    content: version2.substring(lastPos2)
+                    content: text2.substring(lastPos2)
                 });
             }
 
-            const diffJson = JSON.stringify(instructions, null, 2);
-            document.getElementById('diffInstructions').textContent = diffJson;
-            // Also copy to tester section for convenience
-            document.getElementById('testInstructions').value = diffJson;
+            return instructions;
         }
 
-        function applyDiff() {
-            try {
-                const testInput = document.getElementById('testInput').value;
-                const instructions = JSON.parse(
-                    document.getElementById('testInstructions').value
-                );
+        function generatePatch() {
+            if (!fileContents.v1 || !fileContents.v2) {
+                alert('Please select both version files');
+                return;
+            }
 
-                let result = testInput;
-                for (let i = instructions.length - 1; i >= 0; i--) {
-                    const instruction = instructions[i];
+            const instructions = generateDiffInstructions(fileContents.v1, fileContents.v2);
+
+            // Create .dpatch format
+            const patchData = {
+                format: 'dpatch-1.0',
+                timestamp: new Date().toISOString(),
+                instructions: instructions
+            };
+
+            // Create and download the patch file
+            const blob = new Blob([JSON.stringify(patchData, null, 2)],
+                { type: 'application/x-dpatch' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'patch.dpatch';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function applyPatch() {
+            if (!fileContents.original || !fileContents.patch) {
+                alert('Please select both original and patch files');
+                return;
+            }
+
+            try {
+                const patchData = JSON.parse(fileContents.patch);
+
+                // Validate patch format
+                if (patchData.format !== 'dpatch-1.0') {
+                    throw new Error('Invalid patch format');
+                }
+
+                // Apply instructions
+                let result = fileContents.original;
+                for (let i = patchData.instructions.length - 1; i >= 0; i--) {
+                    const instruction = patchData.instructions[i];
                     if (instruction.type === 'delete') {
                         result = result.slice(0, instruction.position) +
                             result.slice(instruction.position + instruction.length);
@@ -262,10 +371,19 @@
                     }
                 }
 
-                document.getElementById('testOutput').value = result;
+                // Create and download the result file
+                const blob = new Blob([result], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'result.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
             } catch (error) {
-                document.getElementById('testOutput').value =
-                    'Error: Invalid diff instructions';
+                alert('Error applying patch: ' + error.message);
             }
         }
     </script>
