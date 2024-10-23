@@ -238,6 +238,7 @@
             patch: null
         };
         const patchTypeAndVersion = 'mapatch-2.0';
+        const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
         // Make drag areas clickable
         document.querySelectorAll('.drag-area').forEach(area => {
@@ -269,7 +270,7 @@
             handleFile(file, fileType);
         }
 
-        function handleFile(file, fileType) {
+        async function handleFile(file, fileType) {
             if (!file) return;
 
             // Validate patch file extension
@@ -278,28 +279,45 @@
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                fileContents[fileType] = e.target.result;
+            try {
+                const content = await readFileAsync(file);
+                fileContents[fileType] = content;
                 fileNames[fileType] = file.name;
                 document.getElementById(`${fileType}Info`).textContent =
                     `${file.name} (${file.size} bytes)`;
-            };
-            reader.readAsText(file);
+            } catch (error) {
+                alert(`Error reading file: ${error.message}`);
+            }
         }
 
-        // Diff generation logic
-        function findLCS(words1, words2) {
+        function readFileAsync(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // Async diff generation logic
+        async function findLCS(words1, words2) {
             const m = words1.length;
             const n = words2.length;
             const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
 
+            // Process LCS in chunks to avoid blocking the main thread
+            const chunkSize = 1000;
             for (let i = 1; i <= m; i++) {
-                for (let j = 1; j <= n; j++) {
-                    if (words1[i - 1] === words2[j - 1]) {
-                        dp[i][j] = dp[i - 1][j - 1] + 1;
-                    } else {
-                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                for (let j = 1; j <= n; j += chunkSize) {
+                    const end = Math.min(j + chunkSize, n + 1);
+                    await new Promise(resolve => setTimeout(resolve, 0)); // Yield to main thread
+
+                    for (let k = j; k < end; k++) {
+                        if (words1[i - 1] === words2[k - 1]) {
+                            dp[i][k] = dp[i - 1][k - 1] + 1;
+                        } else {
+                            dp[i][k] = Math.max(dp[i - 1][k], dp[i][k - 1]);
+                        }
                     }
                 }
             }
@@ -324,7 +342,7 @@
             return lcs;
         }
 
-        function generateDiffInstructions(text1, text2) {
+        async function generateDiffInstructions(text1, text2) {
             const splitWithSpaces = (text) => {
                 const parts = [];
                 let currentWord = '';
@@ -362,122 +380,137 @@
 
             const parts1 = splitWithSpaces(text1);
             const parts2 = splitWithSpaces(text2);
-            const commonSequence = findLCS(parts1, parts2);
 
-            const instructions = [];
-            let lastPos1 = 0;
-            let lastPos2 = 0;
+            // Show loading indicator
+            const loadingEl = document.createElement('div');
+            loadingEl.className = 'alert alert-info';
+            loadingEl.textContent = 'Generating diff...';
+            document.body.appendChild(loadingEl);
 
-            for (let i = 0; i < commonSequence.length; i++) {
-                const match = commonSequence[i];
-                const pos1 = text1.indexOf(match.word, lastPos1);
-                const pos2 = text2.indexOf(match.word, lastPos2);
+            try {
+                const commonSequence = await findLCS(parts1, parts2);
+                const instructions = [];
+                let lastPos1 = 0;
+                let lastPos2 = 0;
 
-                if (pos1 > lastPos1) {
+                for (let i = 0; i < commonSequence.length; i++) {
+                    const match = commonSequence[i];
+                    const pos1 = text1.indexOf(match.word, lastPos1);
+                    const pos2 = text2.indexOf(match.word, lastPos2);
+
+                    if (pos1 > lastPos1) {
+                        instructions.push({
+                            type: 'delete',
+                            position: lastPos1,
+                            length: pos1 - lastPos1
+                        });
+                    }
+
+                    if (pos2 > lastPos2) {
+                        instructions.push({
+                            type: 'insert',
+                            position: lastPos1,
+                            content: text2.substring(lastPos2, pos2)
+                        });
+                    }
+
+                    lastPos1 = pos1 + match.word.length;
+                    lastPos2 = pos2 + match.word.length;
+                }
+
+                if (lastPos1 < text1.length) {
                     instructions.push({
                         type: 'delete',
                         position: lastPos1,
-                        length: pos1 - lastPos1
+                        length: text1.length - lastPos1
                     });
                 }
 
-                if (pos2 > lastPos2) {
+                if (lastPos2 < text2.length) {
                     instructions.push({
                         type: 'insert',
                         position: lastPos1,
-                        content: text2.substring(lastPos2, pos2)
+                        content: text2.substring(lastPos2)
                     });
                 }
 
-                lastPos1 = pos1 + match.word.length;
-                lastPos2 = pos2 + match.word.length;
+                return instructions;
+            } finally {
+                // Remove loading indicator
+                loadingEl.remove();
             }
-
-            if (lastPos1 < text1.length) {
-                instructions.push({
-                    type: 'delete',
-                    position: lastPos1,
-                    length: text1.length - lastPos1
-                });
-            }
-
-            if (lastPos2 < text2.length) {
-                instructions.push({
-                    type: 'insert',
-                    position: lastPos1,
-                    content: text2.substring(lastPos2)
-                });
-            }
-
-            return instructions;
         }
 
-        function generatePatch() {
-            const isTextMode = document.getElementById('text-tab').classList.contains('active');
-
-            if (isTextMode) {
-                const v1Text = document.getElementById('v1Text').value;
-                const v2Text = document.getElementById('v2Text').value;
-
-                if (!v1Text || !v2Text) {
-                    alert('Please enter both version texts');
-                    return;
-                }
-
-                fileContents.v1 = v1Text;
-                fileContents.v2 = v2Text;
-                fileNames.v1 = 'base.txt';
-                fileNames.v2 = 'result.txt';
-            } else if (!fileContents.v1 || !fileContents.v2) {
-                alert('Please select both version files');
-                return;
-            }
-
-            const instructions = generateDiffInstructions(fileContents.v1, fileContents.v2);
-
-            // Create .mapatch format
-            const patchData = {
-                format: patchTypeAndVersion,
-                timestamp: new Date().toISOString(),
-                file1type: fileNames.v1.split('.').pop(),
-                file2type: fileNames.v2.split('.').pop(),
-                baseLength: fileContents.v1.length,
-                instructions: instructions
-            };
-
-            // Create and download the patch file
-            const blob = new Blob([JSON.stringify(patchData, null, 2)], { type: 'application/x-mapatch' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'patch.mapatch';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        function applyPatch() {
-            const isTextMode = document.getElementById('apply-text-tab').classList.contains('active');
-            let originalContent, patchContent;
-
-            if (isTextMode) {
-                originalContent = document.getElementById('originalText').value;
-                if (!originalContent || !fileContents.textPatch) {
-                    alert('Please enter original text and select a patch file');
-                    return;
-                }
-                patchContent = fileContents.textPatch;
-            } else {
-                if (!fileContents.original || !fileContents.patch) {
-                    alert('Please select both original and patch files');
-                    return;
-                }
-                originalContent = fileContents.original;
-                patchContent = fileContents.patch;
-            }
-
+        async function generatePatch() {
             try {
+                const isTextMode = document.getElementById('text-tab').classList.contains('active');
+
+                if (isTextMode) {
+                    const v1Text = document.getElementById('v1Text').value;
+                    const v2Text = document.getElementById('v2Text').value;
+
+                    if (!v1Text || !v2Text) {
+                        alert('Please enter both version texts');
+                        return;
+                    }
+
+                    fileContents.v1 = v1Text;
+                    fileContents.v2 = v2Text;
+                    fileNames.v1 = 'base.txt';
+                    fileNames.v2 = 'result.txt';
+                } else if (!fileContents.v1 || !fileContents.v2) {
+                    alert('Please select both version files');
+                    return;
+                }
+
+                const instructions = await generateDiffInstructions(fileContents.v1, fileContents.v2);
+
+                // Create .mapatch format
+                const patchData = {
+                    format: patchTypeAndVersion,
+                    timestamp: new Date().toISOString(),
+                    file1type: fileNames.v1.split('.').pop(),
+                    file2type: fileNames.v2.split('.').pop(),
+                    baseLength: fileContents.v1.length,
+                    instructions: instructions
+                };
+
+                // Create and download the patch file
+                const blob = new Blob([JSON.stringify(patchData, null, 2)], { type: 'application/x-mapatch' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'patch.mapatch';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert(`Error generating patch: ${error.message}`);
+            }
+        }
+
+        async function applyPatch() {
+            try {
+                const isTextMode = document.getElementById('apply-text-tab').classList.contains('active');
+                let originalContent, patchContent;
+
+                if (isTextMode) {
+                    originalContent = document.getElementById('originalText').value;
+                    if (!originalContent || !fileContents.textPatch) {
+                        alert('Please enter original text and select a patch file');
+                        return;
+                    }
+                    patchContent = fileContents.textPatch;
+                } else {
+                    if (!fileContents.original || !fileContents.patch) {
+                        alert('Please select both original and patch files');
+                        return;
+                    }
+                    originalContent = fileContents.original;
+                    patchContent = fileContents.patch;
+                }
+
                 const patchData = JSON.parse(patchContent);
 
                 // Validate patch format
@@ -495,24 +528,29 @@
 
                 let result = originalContent;
                 let currentOffset = 0;
-                let posistionOfCalculatedOffset = -1;
+                let positionOfCalculatedOffset = -1;
                 let nextOffset = 0;
-                // sort on position
-                sortedInstructions.sort((a, b) => a.position - b.position);
 
-                // Apply instructions
-                for (const instruction of sortedInstructions) {
-                    if (posistionOfCalculatedOffset != instruction.position) {
-                        posistionOfCalculatedOffset = instruction.position;
-                        currentOffset = nextOffset;
-                    }
-                    const adjustedPosition = instruction.position + currentOffset;
-                    if (instruction.type === 'delete') {
-                        result = result.slice(0, adjustedPosition) + result.slice(adjustedPosition + instruction.length);
-                        nextOffset = nextOffset - instruction.length;
-                    } else if (instruction.type === 'insert') {
-                        result = result.slice(0, adjustedPosition) + instruction.content + result.slice(adjustedPosition);
-                        nextOffset = nextOffset + instruction.content.length;
+                // Apply instructions in chunks to avoid blocking the main thread
+                const chunkSize = 100;
+                for (let i = 0; i < sortedInstructions.length; i += chunkSize) {
+                    const chunk = sortedInstructions.slice(i, i + chunkSize);
+
+                    await new Promise(resolve => setTimeout(resolve, 0)); // Yield to main thread
+
+                    for (const instruction of chunk) {
+                        if (positionOfCalculatedOffset != instruction.position) {
+                            positionOfCalculatedOffset = instruction.position;
+                            currentOffset = nextOffset;
+                        }
+                        const adjustedPosition = instruction.position + currentOffset;
+                        if (instruction.type === 'delete') {
+                            result = result.slice(0, adjustedPosition) + result.slice(adjustedPosition + instruction.length);
+                            nextOffset = nextOffset - instruction.length;
+                        } else if (instruction.type === 'insert') {
+                            result = result.slice(0, adjustedPosition) + instruction.content + result.slice(adjustedPosition);
+                            nextOffset = nextOffset + instruction.content.length;
+                        }
                     }
                 }
 
@@ -520,11 +558,11 @@
                     // Display result in a new textarea
                     const resultContainer = document.getElementById('resultContainer');
                     resultContainer.innerHTML = `
-                        <div class="mb-3">
-                            <label class="form-label">Result:</label>
-                            <textarea class="form-control text-input" readonly>${result}</textarea>
-                        </div>
-                    `;
+                <div class="mb-3">
+                    <label class="form-label">Result:</label>
+                    <textarea class="form-control text-input" readonly>${result}</textarea>
+                </div>
+            `;
                 } else {
                     // Download as file
                     const blob = new Blob([result], { type: 'text/plain' });
@@ -538,7 +576,6 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 }
-
             } catch (error) {
                 alert('Error applying patch: ' + error.message);
             }
