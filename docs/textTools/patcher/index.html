@@ -237,6 +237,7 @@
             original: null,
             patch: null
         };
+        const patchTypeAndVersion = 'mapatch-2.0';
 
         // Make drag areas clickable
         document.querySelectorAll('.drag-area').forEach(area => {
@@ -425,8 +426,8 @@
 
                 fileContents.v1 = v1Text;
                 fileContents.v2 = v2Text;
-                fileNames.v1 = 'version1.txt';
-                fileNames.v2 = 'version2.txt';
+                fileNames.v1 = 'base.txt';
+                fileNames.v2 = 'result.txt';
             } else if (!fileContents.v1 || !fileContents.v2) {
                 alert('Please select both version files');
                 return;
@@ -436,7 +437,7 @@
 
             // Create .mapatch format
             const patchData = {
-                format: 'mapatch-1.0',
+                format: patchTypeAndVersion,
                 timestamp: new Date().toISOString(),
                 file1type: fileNames.v1.split('.').pop(),
                 file2type: fileNames.v2.split('.').pop(),
@@ -480,7 +481,7 @@
                 const patchData = JSON.parse(patchContent);
 
                 // Validate patch format
-                if (patchData.format !== 'mapatch-1.0') {
+                if (patchData.format !== patchTypeAndVersion) {
                     throw new Error('Invalid patch format');
                 }
                 if (originalContent.length != patchData.baseLength) {
@@ -530,7 +531,8 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'result.txt';
+                    const fileType = patchData.file2type;
+                    a.download = `result.${fileType}`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
