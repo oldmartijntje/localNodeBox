@@ -120,11 +120,11 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Patch File (.dpatch):</label>
+                <label class="form-label">Patch File (.mapatch):</label>
                 <div class="drag-area" id="patchDragArea" ondrop="dropHandler(event, 'patch')"
                     ondragover="dragOverHandler(event)" ondragleave="dragLeaveHandler(event)">
-                    <div>Drag & drop or click to select .dpatch file</div>
-                    <input type="file" id="patchFile" style="display: none" accept=".dpatch"
+                    <div>Drag & drop or click to select .mapatch file</div>
+                    <input type="file" id="patchFile" style="display: none" accept=".mapatch"
                         onchange="handleFileSelect(event, 'patch')">
                 </div>
                 <div id="patchInfo" class="file-info"></div>
@@ -177,8 +177,8 @@
             if (!file) return;
 
             // Validate patch file extension
-            if (fileType === 'patch' && !file.name.endsWith('.dpatch')) {
-                alert('Please select a .dpatch file');
+            if (fileType === 'patch' && !file.name.endsWith('.mapatch')) {
+                alert('Please select a .mapatch file');
                 return;
             }
 
@@ -323,20 +323,20 @@
 
             const instructions = generateDiffInstructions(fileContents.v1, fileContents.v2);
 
-            // Create .dpatch format
+            // Create .mapatch format
             const patchData = {
-                format: 'dpatch-1.0',
+                format: 'mapatch-1.0',
                 timestamp: new Date().toISOString(),
                 instructions: instructions
             };
 
             // Create and download the patch file
             const blob = new Blob([JSON.stringify(patchData, null, 2)],
-                { type: 'application/x-dpatch' });
+                { type: 'application/x-mapatch' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'patch.dpatch';
+            a.download = 'patch.mapatch';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -353,7 +353,7 @@
                 const patchData = JSON.parse(fileContents.patch);
 
                 // Validate patch format
-                if (patchData.format !== 'dpatch-1.0') {
+                if (patchData.format !== 'mapatch-1.0') {
                     throw new Error('Invalid patch format');
                 }
 
