@@ -12,19 +12,31 @@
     <meta name="keywords" content="patcher, text, versioning, tool">
     <meta name="author" content="OldMartijntje">
     <style>
-        .diff-container {
+        .container {
             max-width: 800px;
             margin: 20px auto;
+        }
+
+        .tool-section {
+            background: #f8f9fa;
             padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
         pre {
-            background-color: #f8f9fa;
+            background-color: #fff;
             padding: 15px;
             border-radius: 4px;
             white-space: pre-wrap;
+            border: 1px solid #dee2e6;
+        }
+
+        h2 {
+            margin-bottom: 20px;
         }
     </style>
+
 </head>
 
 <body>
@@ -54,45 +66,56 @@
             </div>
         </div>
     </nav>
-    <div class="diff-container">
-        <div class="mb-3">
-            <label class="form-label">Version 1:</label>
-            <input type="text" id="version1" class="form-control" value="hello world">
+    <div class="container">
+        <!-- Diff Generator Section -->
+        <div class="tool-section">
+            <h2>Diff Generator</h2>
+            <div class="mb-3">
+                <label class="form-label">Version 1:</label>
+                <input type="text" id="version1" class="form-control" value="hello world">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Version 2:</label>
+                <input type="text" id="version2" class="form-control" value="well hello there beautiful world!">
+            </div>
+
+            <button onclick="generateDiff()" class="btn btn-primary mb-3">Generate Diff</button>
+
+            <div class="mb-3">
+                <label class="form-label">Diff Instructions:</label>
+                <pre id="diffInstructions"></pre>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Version 2:</label>
-            <input type="text" id="version2" class="form-control" value="well hello there beautiful world!">
-        </div>
+        <!-- Diff Tester Section -->
+        <div class="tool-section">
+            <h2>Diff Tester</h2>
+            <div class="mb-3">
+                <label class="form-label">Diff Instructions (JSON):</label>
+                <textarea id="testInstructions" class="form-control" rows="6"></textarea>
+            </div>
 
-        <button onclick="generateDiff()" class="btn btn-primary mb-3">Generate Diff</button>
+            <div class="mb-3">
+                <label class="form-label">Input Text:</label>
+                <input type="text" id="testInput" class="form-control">
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">Diff Instructions:</label>
-            <pre id="diffInstructions"></pre>
-        </div>
+            <button onclick="applyDiff()" class="btn btn-success mb-3">Apply Diff</button>
 
-        <div class="mb-3">
-            <label class="form-label">Test Input:</label>
-            <input type="text" id="testInput" class="form-control">
-        </div>
-
-        <button onclick="applyDiff()" class="btn btn-success mb-3">Apply Diff</button>
-
-        <div class="mb-3">
-            <label class="form-label">Result:</label>
-            <input type="text" id="testOutput" class="form-control" readonly>
+            <div class="mb-3">
+                <label class="form-label">Result:</label>
+                <input type="text" id="testOutput" class="form-control" readonly>
+            </div>
         </div>
     </div>
 
     <script>
-        // Find the longest common subsequence of words
         function findLCS(words1, words2) {
             const m = words1.length;
             const n = words2.length;
             const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
 
-            // Build LCS matrix
             for (let i = 1; i <= m; i++) {
                 for (let j = 1; j <= n; j++) {
                     if (words1[i - 1] === words2[j - 1]) {
@@ -103,7 +126,6 @@
                 }
             }
 
-            // Backtrack to find the sequence
             const lcs = [];
             let i = m, j = n;
             while (i > 0 && j > 0) {
@@ -128,7 +150,6 @@
             const version1 = document.getElementById('version1').value;
             const version2 = document.getElementById('version2').value;
 
-            // Split into words, preserving spaces and punctuation
             const splitWithSpaces = (text) => {
                 const parts = [];
                 let currentWord = '';
@@ -167,22 +188,18 @@
             const parts1 = splitWithSpaces(version1);
             const parts2 = splitWithSpaces(version2);
 
-            // Find longest common subsequence of words
             const commonSequence = findLCS(parts1, parts2);
 
             const instructions = [];
             let lastPos1 = 0;
             let lastPos2 = 0;
 
-            // Process each segment of matching words
             for (let i = 0; i < commonSequence.length; i++) {
                 const match = commonSequence[i];
 
-                // Calculate positions in original strings
                 const pos1 = version1.indexOf(match.word, lastPos1);
                 const pos2 = version2.indexOf(match.word, lastPos2);
 
-                // Delete content before match in version1
                 if (pos1 > lastPos1) {
                     instructions.push({
                         type: 'delete',
@@ -191,7 +208,6 @@
                     });
                 }
 
-                // Insert content before match in version2
                 if (pos2 > lastPos2) {
                     instructions.push({
                         type: 'insert',
@@ -204,7 +220,6 @@
                 lastPos2 = pos2 + match.word.length;
             }
 
-            // Handle remaining content after last match
             if (lastPos1 < version1.length) {
                 instructions.push({
                     type: 'delete',
@@ -221,18 +236,19 @@
                 });
             }
 
-            document.getElementById('diffInstructions').textContent =
-                JSON.stringify(instructions, null, 2);
+            const diffJson = JSON.stringify(instructions, null, 2);
+            document.getElementById('diffInstructions').textContent = diffJson;
+            // Also copy to tester section for convenience
+            document.getElementById('testInstructions').value = diffJson;
         }
 
         function applyDiff() {
             try {
                 const testInput = document.getElementById('testInput').value;
                 const instructions = JSON.parse(
-                    document.getElementById('diffInstructions').textContent
+                    document.getElementById('testInstructions').value
                 );
 
-                // Apply instructions in reverse order to maintain positions
                 let result = testInput;
                 for (let i = instructions.length - 1; i >= 0; i--) {
                     const instruction = instructions[i];
@@ -249,7 +265,7 @@
                 document.getElementById('testOutput').value = result;
             } catch (error) {
                 document.getElementById('testOutput').value =
-                    'Error applying diff instructions';
+                    'Error: Invalid diff instructions';
             }
         }
     </script>
