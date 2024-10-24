@@ -219,8 +219,6 @@
                 <div id="resultContainer"></div>
             </div>
         </div>
-
-        <button onclick="applyPatch()" class="btn btn-success mb-3">Apply Patch</button>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -237,6 +235,7 @@
             original: { name: null, type: null, isBinary: false },
             patch: { name: null, type: null, isBinary: false }
         };
+        let progressOverlay = null;
         const patchTypeAndVersion = 'mapatch-2.0';
         const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
@@ -453,14 +452,91 @@
             return instructions;
         }
 
+        function showProgress(message, progress = 0) {
+            if (!progressOverlay) {
+                progressOverlay = document.createElement('div');
+                progressOverlay.className = 'progress-overlay';
+                progressOverlay.innerHTML = `
+            <div class="progress-container">
+                <div class="progress-bar-container">
+                    <div class="progress-bar"></div>
+                </div>
+                <div class="progress-message"></div>
+            </div>
+        `;
+                document.body.appendChild(progressOverlay);
+
+                // Add the required styles if they don't exist
+                if (!document.getElementById('progress-styles')) {
+                    const styles = document.createElement('style');
+                    styles.id = 'progress-styles';
+                    styles.textContent = `
+                .progress-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                }
+                .progress-container {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                    width: 300px;
+                }
+                .progress-bar-container {
+                    background: #eee;
+                    height: 20px;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    margin-bottom: 10px;
+                }
+                .progress-bar {
+                    height: 100%;
+                    background: #007bff;
+                    width: 0%;
+                    transition: width 0.3s ease;
+                }
+                .progress-message {
+                    text-align: center;
+                    color: #333;
+                    font-size: 14px;
+                }
+            `;
+                    document.head.appendChild(styles);
+                }
+            }
+
+            const progressMessage = progressOverlay.querySelector('.progress-message');
+            const progressBar = progressOverlay.querySelector('.progress-bar');
+            progressMessage.textContent = message;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function hideProgress() {
+            if (progressOverlay) {
+                progressOverlay.remove();
+                progressOverlay = null;
+            }
+        }
+
         async function generatePatch() {
             try {
+                showProgress('Preparing files...', 0);
+
                 const isTextMode = document.getElementById('text-tab').classList.contains('active');
 
                 if (isTextMode) {
                     const v1Text = document.getElementById('v1Text').value;
                     const v2Text = document.getElementById('v2Text').value;
                     if (!v1Text || !v2Text) {
+                        hideProgress();
                         alert('Please enter both version texts');
                         return;
                     }
@@ -469,13 +545,17 @@
                     fileMetadata.v1 = { name: 'base.txt', type: 'text/plain', isBinary: false };
                     fileMetadata.v2 = { name: 'result.txt', type: 'text/plain', isBinary: false };
                 } else if (!fileContents.v1 || !fileContents.v2) {
+                    hideProgress();
                     alert('Please select both version files');
                     return;
                 }
 
-                // Check if either file is binary
+                showProgress('Analyzing differences...', 25);
+                await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to update
+
                 const treatAsBinary = fileMetadata.v1.isBinary || fileMetadata.v2.isBinary;
 
+                showProgress('Generating diff instructions...', 50);
                 const instructions = await generateDiffInstructions(
                     fileContents.v1,
                     fileContents.v2,
@@ -483,7 +563,7 @@
                     fileMetadata.v2.isBinary
                 );
 
-                // Create .mapatch format with binary flags for both files
+                showProgress('Creating patch file...', 75);
                 const patchData = {
                     format: 'mapatch-2.0-binary',
                     timestamp: new Date().toISOString(),
@@ -502,35 +582,46 @@
                     instructions: instructions
                 };
 
-                // Create and download the patch file
+                showProgress('Finalizing...', 90);
                 const blob = new Blob([JSON.stringify(patchData, null, 2)], { type: 'application/x-mapatch' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = 'patch.mapatch';
                 document.body.appendChild(a);
+
+                showProgress('Starting download...', 100);
+                await new Promise(resolve => setTimeout(resolve, 500));
+
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+
+                hideProgress();
             } catch (error) {
+                hideProgress();
                 alert(`Error generating patch: ${error.message}`);
             }
         }
 
         async function applyPatch() {
             try {
+                showProgress('Reading files...', 0);
+
                 const isTextMode = document.getElementById('apply-text-tab').classList.contains('active');
                 let originalContent, patchContent;
 
                 if (isTextMode) {
                     originalContent = document.getElementById('originalText').value;
                     if (!originalContent || !fileContents.textPatch) {
+                        hideProgress();
                         alert('Please enter original text and select a patch file');
                         return;
                     }
                     patchContent = fileContents.textPatch;
                 } else {
                     if (!fileContents.original || !fileContents.patch) {
+                        hideProgress();
                         alert('Please select both original and patch files');
                         return;
                     }
@@ -538,20 +629,21 @@
                     patchContent = fileContents.patch;
                 }
 
+                showProgress('Parsing patch file...', 25);
                 const patchData = JSON.parse(patchContent);
 
-                // Validate patch format
                 if (!patchData.format.startsWith('mapatch-2.0')) {
+                    hideProgress();
                     throw new Error('Invalid patch format');
                 }
 
+                showProgress('Applying patch...', 50);
                 let result;
                 if (patchData.treatAsBinary) {
-                    // Convert original content to Uint8Array if it isn't already
                     const originalArray = originalContent instanceof Uint8Array ?
                         originalContent : new TextEncoder().encode(originalContent);
 
-                    // Handle binary content
+                    showProgress('Processing binary data...', 75);
                     result = new Uint8Array(originalArray);
                     for (const instruction of patchData.instructions) {
                         if (instruction.type === 'delete') {
@@ -568,7 +660,7 @@
                         }
                     }
                 } else {
-                    // Handle text content
+                    showProgress('Processing text data...', 75);
                     result = originalContent;
                     let offset = 0;
                     for (const instruction of patchData.instructions) {
@@ -583,7 +675,7 @@
                     }
                 }
 
-                // Download or display result
+                showProgress('Preparing result...', 90);
                 if (isTextMode && !patchData.treatAsBinary) {
                     const resultContainer = document.getElementById('resultContainer');
                     resultContainer.innerHTML = `
@@ -600,11 +692,18 @@
                     const fileExt = patchData.file2.type.split('/').pop();
                     a.download = `result${fileExt ? '.' + fileExt : ''}`;
                     document.body.appendChild(a);
+
+                    showProgress('Starting download...', 100);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 }
+
+                hideProgress();
             } catch (error) {
+                hideProgress();
                 alert('Error applying patch: ' + error.message);
             }
         }
