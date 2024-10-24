@@ -269,21 +269,38 @@
             handleFile(file, fileType);
         }
 
+        function formatFileSize(bytes) {
+            if (typeof bytes !== 'number' || bytes < 0) return 'Invalid size'; // Check for valid input
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            // Handle the precision issue and remove trailing zeros
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)).toString().replace(/\.?0+$/, '') + ' ' + sizes[i];
+        }
+
+
+        // Modified handleFile function
         async function handleFile(file, fileType) {
             if (!file) return;
 
-            // Validate patch file extension
             if (fileType === 'patch' && !file.name.endsWith('.mapatch')) {
                 alert('Please select a .mapatch file');
                 return;
             }
-
             try {
-                const content = await readFileAsync(file);
-                fileContents[fileType] = content;
-                fileNames[fileType] = file.name;
+                const result = await readFileAsync(file);
+                fileContents[fileType] = result.content;
+                fileMetadata[fileType] = {
+                    name: file.name,
+                    type: file.type || 'application/octet-stream',
+                    isBinary: result.isBinary
+                };
                 document.getElementById(`${fileType}Info`).textContent =
-                    `${file.name} (${file.size} bytes)`;
+                    `${file.name} (${formatFileSize(file.size)}) - ${result.isBinary ? 'Binary' : 'Text'} file`;
             } catch (error) {
                 alert(`Error reading file: ${error.message}`);
             }
@@ -370,29 +387,6 @@
                 }
             }
             return lcs;
-        }
-
-        async function handleFile(file, fileType) {
-            if (!file) return;
-
-            if (fileType === 'patch' && !file.name.endsWith('.mapatch')) {
-                alert('Please select a .mapatch file');
-                return;
-            }
-
-            try {
-                const result = await readFileAsync(file);
-                fileContents[fileType] = result.content;
-                fileMetadata[fileType] = {
-                    name: file.name,
-                    type: file.type || 'application/octet-stream',
-                    isBinary: result.isBinary
-                };
-                document.getElementById(`${fileType}Info`).textContent =
-                    `${file.name} (${file.size} bytes) - ${result.isBinary ? 'Binary' : 'Text'} file`;
-            } catch (error) {
-                alert(`Error reading file: ${error.message}`);
-            }
         }
 
         async function generateDiffInstructions(content1, content2, isBinary1, isBinary2) {
