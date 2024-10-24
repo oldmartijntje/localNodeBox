@@ -236,7 +236,7 @@
             patch: { name: null, type: null, isBinary: false }
         };
         let progressOverlay = null;
-        const patchTypeAndVersion = 'mapatch-3.1';
+        const patchTypeAndVersion = 'mapatch-3.2';
         const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
         // Make drag areas clickable
@@ -424,16 +424,16 @@
                     if (j > i) {
                         if (j <= array1.length) {
                             instructions.push({
-                                type: 0,
-                                position: i,
-                                length: j - i
+                                t: 0,
+                                p: i,
+                                l: j - i
                             });
                         }
                         if (j <= array2.length) {
                             instructions.push({
-                                type: 1,
-                                position: i,
-                                content: Array.from(array2.slice(i, j))
+                                t: 1,
+                                p: i,
+                                c: Array.from(array2.slice(i, j))
                             });
                         }
                         i = j - 1;
@@ -618,16 +618,16 @@
                 // Process a chunk of instructions
                 const chunk = instructions.slice(i, i + chunkSize);
                 for (const instruction of chunk) {
-                    if (instruction.type === 0) {
-                        const newArray = new Uint8Array(result.length - instruction.length);
-                        newArray.set(result.slice(0, instruction.position));
-                        newArray.set(result.slice(instruction.position + instruction.length), instruction.position);
+                    if (instruction.t === 0) {
+                        const newArray = new Uint8Array(result.length - instruction.l);
+                        newArray.set(result.slice(0, instruction.p));
+                        newArray.set(result.slice(instruction.p + instruction.l), instruction.p);
                         result = newArray;
-                    } else if (instruction.type === 1) {
-                        const newArray = new Uint8Array(result.length + instruction.content.length);
-                        newArray.set(result.slice(0, instruction.position));
-                        newArray.set(new Uint8Array(instruction.content), instruction.position);
-                        newArray.set(result.slice(instruction.position), instruction.position + instruction.content.length);
+                    } else if (instruction.t === 1) {
+                        const newArray = new Uint8Array(result.length + instruction.c.length);
+                        newArray.set(result.slice(0, instruction.p));
+                        newArray.set(new Uint8Array(instruction.c), instruction.p);
+                        newArray.set(result.slice(instruction.p), instruction.p + instruction.c.length);
                         result = newArray;
                     }
                 }
@@ -686,13 +686,13 @@
                     result = originalContent;
                     let offset = 0;
                     for (const instruction of patchData.instructions) {
-                        const position = instruction.position + offset;
-                        if (instruction.type === 0) {
-                            result = result.slice(0, position) + result.slice(position + instruction.length);
-                            offset -= instruction.length;
-                        } else if (instruction.type === 1) {
-                            result = result.slice(0, position) + instruction.content + result.slice(position);
-                            offset += instruction.content.length;
+                        const position = instruction.p + offset;
+                        if (instruction.t === 0) {
+                            result = result.slice(0, position) + result.slice(position + instruction.l);
+                            offset -= instruction.l;
+                        } else if (instruction.t === 1) {
+                            result = result.slice(0, position) + instruction.c + result.slice(position);
+                            offset += instruction.c.length;
                         }
                     }
                 }
