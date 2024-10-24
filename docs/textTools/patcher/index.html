@@ -231,11 +231,11 @@
             original: null,
             patch: null
         };
-        const fileNames = {
-            v1: null,
-            v2: null,
-            original: null,
-            patch: null
+        const fileMetadata = {
+            v1: { name: null, type: null, isBinary: false },
+            v2: { name: null, type: null, isBinary: false },
+            original: { name: null, type: null, isBinary: false },
+            patch: { name: null, type: null, isBinary: false }
         };
         const patchTypeAndVersion = 'mapatch-2.0';
         const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
@@ -290,12 +290,43 @@
             }
         }
 
+        function isBinaryContent(buffer) {
+            // Check first 1024 bytes for null bytes or non-printable characters
+            const uint8Array = new Uint8Array(buffer.slice(0, 1024));
+            for (let i = 0; i < uint8Array.length; i++) {
+                if (uint8Array[i] === 0 || (uint8Array[i] < 32 && ![9, 10, 13].includes(uint8Array[i]))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Modified file reader function
         function readFileAsync(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
+                reader.onload = (e) => {
+                    // Always read as ArrayBuffer first
+                    const buffer = e.target.result;
+                    const isBinary = isBinaryContent(buffer);
+
+                    if (isBinary) {
+                        // Keep as Uint8Array for binary files
+                        resolve({
+                            content: new Uint8Array(buffer),
+                            isBinary: true
+                        });
+                    } else {
+                        // Convert to text for text files
+                        const textDecoder = new TextDecoder('utf-8');
+                        resolve({
+                            content: textDecoder.decode(buffer),
+                            isBinary: false
+                        });
+                    }
+                };
                 reader.onerror = reject;
-                reader.readAsText(file);
+                reader.readAsArrayBuffer(file);
             });
         }
 
@@ -342,103 +373,84 @@
             return lcs;
         }
 
-        async function generateDiffInstructions(text1, text2) {
-            const splitWithSpaces = (text) => {
-                const parts = [];
-                let currentWord = '';
-                let currentSpaces = '';
+        async function handleFile(file, fileType) {
+            if (!file) return;
 
-                for (let char of text) {
-                    if (/\s/.test(char)) {
-                        if (currentWord) {
-                            parts.push(currentWord);
-                            currentWord = '';
-                        }
-                        currentSpaces += char;
-                    } else if (/[.,!?;]/.test(char)) {
-                        if (currentWord) {
-                            parts.push(currentWord);
-                            currentWord = '';
-                        }
-                        if (currentSpaces) {
-                            parts.push(currentSpaces);
-                            currentSpaces = '';
-                        }
-                        parts.push(char);
-                    } else {
-                        if (currentSpaces) {
-                            parts.push(currentSpaces);
-                            currentSpaces = '';
-                        }
-                        currentWord += char;
-                    }
-                }
-                if (currentWord) parts.push(currentWord);
-                if (currentSpaces) parts.push(currentSpaces);
-                return parts;
-            };
-
-            const parts1 = splitWithSpaces(text1);
-            const parts2 = splitWithSpaces(text2);
-
-            // Show loading indicator
-            const loadingEl = document.createElement('div');
-            loadingEl.className = 'alert alert-info';
-            loadingEl.textContent = 'Generating diff...';
-            document.body.appendChild(loadingEl);
+            if (fileType === 'patch' && !file.name.endsWith('.mapatch')) {
+                alert('Please select a .mapatch file');
+                return;
+            }
 
             try {
-                const commonSequence = await findLCS(parts1, parts2);
-                const instructions = [];
-                let lastPos1 = 0;
-                let lastPos2 = 0;
-
-                for (let i = 0; i < commonSequence.length; i++) {
-                    const match = commonSequence[i];
-                    const pos1 = text1.indexOf(match.word, lastPos1);
-                    const pos2 = text2.indexOf(match.word, lastPos2);
-
-                    if (pos1 > lastPos1) {
-                        instructions.push({
-                            type: 'delete',
-                            position: lastPos1,
-                            length: pos1 - lastPos1
-                        });
-                    }
-
-                    if (pos2 > lastPos2) {
-                        instructions.push({
-                            type: 'insert',
-                            position: lastPos1,
-                            content: text2.substring(lastPos2, pos2)
-                        });
-                    }
-
-                    lastPos1 = pos1 + match.word.length;
-                    lastPos2 = pos2 + match.word.length;
-                }
-
-                if (lastPos1 < text1.length) {
-                    instructions.push({
-                        type: 'delete',
-                        position: lastPos1,
-                        length: text1.length - lastPos1
-                    });
-                }
-
-                if (lastPos2 < text2.length) {
-                    instructions.push({
-                        type: 'insert',
-                        position: lastPos1,
-                        content: text2.substring(lastPos2)
-                    });
-                }
-
-                return instructions;
-            } finally {
-                // Remove loading indicator
-                loadingEl.remove();
+                const result = await readFileAsync(file);
+                fileContents[fileType] = result.content;
+                fileMetadata[fileType] = {
+                    name: file.name,
+                    type: file.type || 'application/octet-stream',
+                    isBinary: result.isBinary
+                };
+                document.getElementById(`${fileType}Info`).textContent =
+                    `${file.name} (${file.size} bytes) - ${result.isBinary ? 'Binary' : 'Text'} file`;
+            } catch (error) {
+                alert(`Error reading file: ${error.message}`);
             }
+        }
+
+        async function generateDiffInstructions(content1, content2, isBinary1, isBinary2) {
+            // If either file is binary, treat both as binary
+            const treatAsBinary = isBinary1 || isBinary2;
+
+            if (!treatAsBinary) {
+                // Use existing text-based diff for text files
+                return generateTextDiffInstructions(content1, content2);
+            }
+
+            // Convert content to Uint8Array if it isn't already
+            const array1 = content1 instanceof Uint8Array ? content1 : new TextEncoder().encode(content1);
+            const array2 = content2 instanceof Uint8Array ? content2 : new TextEncoder().encode(content2);
+
+            // Binary diff implementation
+            const instructions = [];
+            let matchStart = 0;
+            let matchLength = 0;
+
+            for (let i = 0; i < Math.max(array1.length, array2.length); i++) {
+                if (array1[i] !== array2[i]) {
+                    if (matchLength > 0) {
+                        // Store the match
+                        matchLength = 0;
+                    }
+
+                    // Find the next matching sequence
+                    let j = i;
+                    while (j < Math.max(array1.length, array2.length) && array1[j] !== array2[j]) {
+                        j++;
+                    }
+
+                    // Create diff instruction
+                    if (j > i) {
+                        if (j <= array1.length) {
+                            instructions.push({
+                                type: 'delete',
+                                position: i,
+                                length: j - i
+                            });
+                        }
+                        if (j <= array2.length) {
+                            instructions.push({
+                                type: 'insert',
+                                position: i,
+                                content: Array.from(array2.slice(i, j))
+                            });
+                        }
+                        i = j - 1;
+                    }
+                } else {
+                    matchLength++;
+                }
+            }
+
+            return instructions;
         }
 
         async function generatePatch() {
@@ -448,30 +460,45 @@
                 if (isTextMode) {
                     const v1Text = document.getElementById('v1Text').value;
                     const v2Text = document.getElementById('v2Text').value;
-
                     if (!v1Text || !v2Text) {
                         alert('Please enter both version texts');
                         return;
                     }
-
                     fileContents.v1 = v1Text;
                     fileContents.v2 = v2Text;
-                    fileNames.v1 = 'base.txt';
-                    fileNames.v2 = 'result.txt';
+                    fileMetadata.v1 = { name: 'base.txt', type: 'text/plain', isBinary: false };
+                    fileMetadata.v2 = { name: 'result.txt', type: 'text/plain', isBinary: false };
                 } else if (!fileContents.v1 || !fileContents.v2) {
                     alert('Please select both version files');
                     return;
                 }
 
-                const instructions = await generateDiffInstructions(fileContents.v1, fileContents.v2);
+                // Check if either file is binary
+                const treatAsBinary = fileMetadata.v1.isBinary || fileMetadata.v2.isBinary;
 
-                // Create .mapatch format
+                const instructions = await generateDiffInstructions(
+                    fileContents.v1,
+                    fileContents.v2,
+                    fileMetadata.v1.isBinary,
+                    fileMetadata.v2.isBinary
+                );
+
+                // Create .mapatch format with binary flags for both files
                 const patchData = {
-                    format: patchTypeAndVersion,
+                    format: 'mapatch-2.0-binary',
                     timestamp: new Date().toISOString(),
-                    file1type: fileNames.v1.split('.').pop(),
-                    file2type: fileNames.v2.split('.').pop(),
-                    baseLength: fileContents.v1.length,
+                    file1: {
+                        type: fileMetadata.v1.type,
+                        isBinary: fileMetadata.v1.isBinary
+                    },
+                    file2: {
+                        type: fileMetadata.v2.type,
+                        isBinary: fileMetadata.v2.isBinary
+                    },
+                    treatAsBinary: treatAsBinary,
+                    baseLength: treatAsBinary ?
+                        (fileContents.v1 instanceof Uint8Array ? fileContents.v1.length : new TextEncoder().encode(fileContents.v1).length) :
+                        fileContents.v1.length,
                     instructions: instructions
                 };
 
@@ -514,48 +541,50 @@
                 const patchData = JSON.parse(patchContent);
 
                 // Validate patch format
-                if (patchData.format !== patchTypeAndVersion) {
+                if (!patchData.format.startsWith('mapatch-2.0')) {
                     throw new Error('Invalid patch format');
                 }
-                if (originalContent.length != patchData.baseLength) {
-                    if (!confirm('The original text length does not match the base length in the patch. Continue?')) {
-                        return;
-                    }
-                }
 
-                // Sort instructions by position to ensure correct ordering
-                const sortedInstructions = [...patchData.instructions].sort((a, b) => a.position - b.position);
+                let result;
+                if (patchData.treatAsBinary) {
+                    // Convert original content to Uint8Array if it isn't already
+                    const originalArray = originalContent instanceof Uint8Array ?
+                        originalContent : new TextEncoder().encode(originalContent);
 
-                let result = originalContent;
-                let currentOffset = 0;
-                let positionOfCalculatedOffset = -1;
-                let nextOffset = 0;
-
-                // Apply instructions in chunks to avoid blocking the main thread
-                const chunkSize = 100;
-                for (let i = 0; i < sortedInstructions.length; i += chunkSize) {
-                    const chunk = sortedInstructions.slice(i, i + chunkSize);
-
-                    await new Promise(resolve => setTimeout(resolve, 0)); // Yield to main thread
-
-                    for (const instruction of chunk) {
-                        if (positionOfCalculatedOffset != instruction.position) {
-                            positionOfCalculatedOffset = instruction.position;
-                            currentOffset = nextOffset;
-                        }
-                        const adjustedPosition = instruction.position + currentOffset;
+                    // Handle binary content
+                    result = new Uint8Array(originalArray);
+                    for (const instruction of patchData.instructions) {
                         if (instruction.type === 'delete') {
-                            result = result.slice(0, adjustedPosition) + result.slice(adjustedPosition + instruction.length);
-                            nextOffset = nextOffset - instruction.length;
+                            const newArray = new Uint8Array(result.length - instruction.length);
+                            newArray.set(result.slice(0, instruction.position));
+                            newArray.set(result.slice(instruction.position + instruction.length), instruction.position);
+                            result = newArray;
                         } else if (instruction.type === 'insert') {
-                            result = result.slice(0, adjustedPosition) + instruction.content + result.slice(adjustedPosition);
-                            nextOffset = nextOffset + instruction.content.length;
+                            const newArray = new Uint8Array(result.length + instruction.content.length);
+                            newArray.set(result.slice(0, instruction.position));
+                            newArray.set(new Uint8Array(instruction.content), instruction.position);
+                            newArray.set(result.slice(instruction.position), instruction.position + instruction.content.length);
+                            result = newArray;
+                        }
+                    }
+                } else {
+                    // Handle text content
+                    result = originalContent;
+                    let offset = 0;
+                    for (const instruction of patchData.instructions) {
+                        const position = instruction.position + offset;
+                        if (instruction.type === 'delete') {
+                            result = result.slice(0, position) + result.slice(position + instruction.length);
+                            offset -= instruction.length;
+                        } else if (instruction.type === 'insert') {
+                            result = result.slice(0, position) + instruction.content + result.slice(position);
+                            offset += instruction.content.length;
                         }
                     }
                 }
 
-                if (isTextMode) {
-                    // Display result in a new textarea
+                // Download or display result
+                if (isTextMode && !patchData.treatAsBinary) {
                     const resultContainer = document.getElementById('resultContainer');
                     resultContainer.innerHTML = `
                 <div class="mb-3">
@@ -564,13 +593,12 @@
                 </div>
             `;
                 } else {
-                    // Download as file
-                    const blob = new Blob([result], { type: 'text/plain' });
+                    const blob = new Blob([result], { type: patchData.file2.type });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    const fileType = patchData.file2type;
-                    a.download = `result.${fileType}`;
+                    const fileExt = patchData.file2.type.split('/').pop();
+                    a.download = `result${fileExt ? '.' + fileExt : ''}`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
