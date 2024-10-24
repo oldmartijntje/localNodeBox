@@ -607,7 +607,8 @@
             for (let i = 0; i < instructions.length; i += chunkSize) {
                 // Update progress based on how many instructions we've processed
                 const progress = Math.min(75 + (i / instructions.length * 15), 90);
-                showProgress(`Processing binary data... (${Math.floor(i / totalInstructions * 100)}%)`, progress);
+                const percentComplete = (i / totalInstructions * 100).toFixed(2);
+                showProgress(`Processing binary data... (${percentComplete}%)`, progress);
 
                 // Allow UI to update
                 await new Promise(resolve => setTimeout(resolve, 0));
