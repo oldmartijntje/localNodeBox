@@ -236,7 +236,7 @@
             patch: { name: null, type: null, isBinary: false }
         };
         let progressOverlay = null;
-        const patchTypeAndVersion = 'mapatch-2.0';
+        const patchTypeAndVersion = 'mapatch-3.0';
         const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
         // Make drag areas clickable
@@ -559,15 +559,17 @@
 
                 showProgress('Creating patch file...', 75);
                 const patchData = {
-                    format: 'mapatch-2.0-binary',
+                    format: patchTypeAndVersion + '-binary',
                     timestamp: new Date().toISOString(),
                     file1: {
                         type: fileMetadata.v1.type,
-                        isBinary: fileMetadata.v1.isBinary
+                        isBinary: fileMetadata.v1.isBinary,
+                        fileExt: fileMetadata.v1.name.split('.').pop()
                     },
                     file2: {
                         type: fileMetadata.v2.type,
-                        isBinary: fileMetadata.v2.isBinary
+                        isBinary: fileMetadata.v2.isBinary,
+                        fileExt: fileMetadata.v2.name.split('.').pop()
                     },
                     treatAsBinary: treatAsBinary,
                     baseLength: treatAsBinary ?
@@ -663,7 +665,7 @@
                 await new Promise(resolve => setTimeout(resolve, 0));
                 const patchData = JSON.parse(patchContent);
 
-                if (!patchData.format.startsWith('mapatch-2.0')) {
+                if (!patchData.format.startsWith(patchTypeAndVersion)) {
                     hideProgress();
                     throw new Error('Invalid patch format');
                 }
@@ -711,7 +713,7 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    const fileExt = patchData.file2.type.split('/').pop();
+                    const fileExt = patchData.file2.fileExt;
                     a.download = `result${fileExt ? '.' + fileExt : ''}`;
                     document.body.appendChild(a);
 
