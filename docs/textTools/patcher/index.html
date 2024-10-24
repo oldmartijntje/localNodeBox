@@ -604,6 +604,41 @@
             }
         }
 
+        async function applyBinaryPatch(originalArray, instructions) {
+            let result = new Uint8Array(originalArray);
+            const totalInstructions = instructions.length;
+
+            // Process instructions in chunks of 10
+            const chunkSize = 10;
+            for (let i = 0; i < instructions.length; i += chunkSize) {
+                // Update progress based on how many instructions we've processed
+                const progress = Math.min(75 + (i / instructions.length * 15), 90);
+                showProgress(`Processing binary data... (${Math.floor(i / totalInstructions * 100)}%)`, progress);
+
+                // Allow UI to update
+                await new Promise(resolve => setTimeout(resolve, 0));
+
+                // Process a chunk of instructions
+                const chunk = instructions.slice(i, i + chunkSize);
+                for (const instruction of chunk) {
+                    if (instruction.type === 'delete') {
+                        const newArray = new Uint8Array(result.length - instruction.length);
+                        newArray.set(result.slice(0, instruction.position));
+                        newArray.set(result.slice(instruction.position + instruction.length), instruction.position);
+                        result = newArray;
+                    } else if (instruction.type === 'insert') {
+                        const newArray = new Uint8Array(result.length + instruction.content.length);
+                        newArray.set(result.slice(0, instruction.position));
+                        newArray.set(new Uint8Array(instruction.content), instruction.position);
+                        newArray.set(result.slice(instruction.position), instruction.position + instruction.content.length);
+                        result = newArray;
+                    }
+                }
+            }
+
+            return result;
+        }
+
         async function applyPatch() {
             try {
                 showProgress('Reading files...', 0);
@@ -630,6 +665,7 @@
                 }
 
                 showProgress('Parsing patch file...', 25);
+                await new Promise(resolve => setTimeout(resolve, 0));
                 const patchData = JSON.parse(patchContent);
 
                 if (!patchData.format.startsWith('mapatch-2.0')) {
@@ -637,30 +673,19 @@
                     throw new Error('Invalid patch format');
                 }
 
-                showProgress('Applying patch...', 50);
+                showProgress('Preparing to apply patch...', 50);
+                await new Promise(resolve => setTimeout(resolve, 0));
+
                 let result;
                 if (patchData.treatAsBinary) {
                     const originalArray = originalContent instanceof Uint8Array ?
                         originalContent : new TextEncoder().encode(originalContent);
 
-                    showProgress('Processing binary data...', 75);
-                    result = new Uint8Array(originalArray);
-                    for (const instruction of patchData.instructions) {
-                        if (instruction.type === 'delete') {
-                            const newArray = new Uint8Array(result.length - instruction.length);
-                            newArray.set(result.slice(0, instruction.position));
-                            newArray.set(result.slice(instruction.position + instruction.length), instruction.position);
-                            result = newArray;
-                        } else if (instruction.type === 'insert') {
-                            const newArray = new Uint8Array(result.length + instruction.content.length);
-                            newArray.set(result.slice(0, instruction.position));
-                            newArray.set(new Uint8Array(instruction.content), instruction.position);
-                            newArray.set(result.slice(instruction.position), instruction.position + instruction.content.length);
-                            result = newArray;
-                        }
-                    }
+                    result = await applyBinaryPatch(originalArray, patchData.instructions);
                 } else {
                     showProgress('Processing text data...', 75);
+                    await new Promise(resolve => setTimeout(resolve, 0));
+
                     result = originalContent;
                     let offset = 0;
                     for (const instruction of patchData.instructions) {
@@ -676,6 +701,8 @@
                 }
 
                 showProgress('Preparing result...', 90);
+                await new Promise(resolve => setTimeout(resolve, 0));
+
                 if (isTextMode && !patchData.treatAsBinary) {
                     const resultContainer = document.getElementById('resultContainer');
                     resultContainer.innerHTML = `
