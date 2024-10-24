@@ -236,7 +236,7 @@
             patch: { name: null, type: null, isBinary: false }
         };
         let progressOverlay = null;
-        const patchTypeAndVersion = 'mapatch-3.0';
+        const patchTypeAndVersion = 'mapatch-3.1';
         const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
         // Make drag areas clickable
@@ -424,14 +424,14 @@
                     if (j > i) {
                         if (j <= array1.length) {
                             instructions.push({
-                                type: 'delete',
+                                type: 0,
                                 position: i,
                                 length: j - i
                             });
                         }
                         if (j <= array2.length) {
                             instructions.push({
-                                type: 'insert',
+                                type: 1,
                                 position: i,
                                 content: Array.from(array2.slice(i, j))
                             });
@@ -618,12 +618,12 @@
                 // Process a chunk of instructions
                 const chunk = instructions.slice(i, i + chunkSize);
                 for (const instruction of chunk) {
-                    if (instruction.type === 'delete') {
+                    if (instruction.type === 0) {
                         const newArray = new Uint8Array(result.length - instruction.length);
                         newArray.set(result.slice(0, instruction.position));
                         newArray.set(result.slice(instruction.position + instruction.length), instruction.position);
                         result = newArray;
-                    } else if (instruction.type === 'insert') {
+                    } else if (instruction.type === 1) {
                         const newArray = new Uint8Array(result.length + instruction.content.length);
                         newArray.set(result.slice(0, instruction.position));
                         newArray.set(new Uint8Array(instruction.content), instruction.position);
@@ -687,10 +687,10 @@
                     let offset = 0;
                     for (const instruction of patchData.instructions) {
                         const position = instruction.position + offset;
-                        if (instruction.type === 'delete') {
+                        if (instruction.type === 0) {
                             result = result.slice(0, position) + result.slice(position + instruction.length);
                             offset -= instruction.length;
-                        } else if (instruction.type === 'insert') {
+                        } else if (instruction.type === 1) {
                             result = result.slice(0, position) + instruction.content + result.slice(position);
                             offset += instruction.content.length;
                         }
