@@ -46,6 +46,11 @@
             border-radius: 0.25rem;
             font-family: monospace;
         }
+
+        .link-placeholder {
+            font-style: italic;
+            color: #6c757d;
+        }
     </style>
 </head>
 
@@ -119,6 +124,30 @@
             text = text.replace(
                 /```(\w*)\n([\s\S]*?)```/g,
                 '<div class="code-block">$2</div>'
+            );
+
+            // Handle embedded content
+            text = text.replace(
+                /!\[(.+?)\]\((.+?)\)/g,
+                '<div class="link-placeholder">Embedded content: $1</div>'
+            );
+
+            // Handle math equations
+            text = text.replace(
+                /\$\$(.*?)\$\$/g,
+                '<div class="link-placeholder">Math equation: $1</div>'
+            );
+
+            // Handle footnotes
+            text = text.replace(
+                /\[\^(.*?)\]/g,
+                '<div class="link-placeholder">Footnote: $1</div>'
+            );
+
+            // Handle internal links (formatted as placeholders)
+            text = text.replace(
+                /\[\[(.*?)\]\]/g,
+                '<div class="link-placeholder">[Internal link: $1]</div>'
             );
 
             return text;
@@ -199,6 +228,68 @@
             // Handle hashtags
             markdown = markdown.replace(/#(\w+)/g, (match, tag) => {
                 return `[TAG: ${tag}]`;
+            });
+
+            // Handle embedded content
+            markdown = markdown.replace(/!\[(.+?)\]\((.+?)\)/g, (match, alt, src) => {
+                paragraphs.push(
+                    new docx.Paragraph({
+                        children: [
+                            new docx.TextRun({
+                                text: `[Embedded content: ${alt}]`
+                            })
+                        ],
+                        spacing: { before: 200, after: 200 }
+                    })
+                );
+                return '';
+            });
+
+            // Handle math equations
+            markdown = markdown.replace(/\$\$(.*?)\$\$/g, (match, equation) => {
+                paragraphs.push(
+                    new docx.Paragraph({
+                        children: [
+                            new docx.TextRun({
+                                text: `[Math equation: ${equation}]`
+                            })
+                        ],
+                        spacing: { before: 200, after: 200 }
+                    })
+                );
+                return '';
+            });
+
+            // Handle footnotes
+            markdown = markdown.replace(/\[\^(.*?)\]/g, (match, footnote) => {
+                paragraphs.push(
+                    new docx.Paragraph({
+                        children: [
+                            new docx.TextRun({
+                                text: `[Footnote: ${footnote}]`
+                            })
+                        ],
+                        spacing: { before: 100, after: 100 }
+                    })
+                );
+                return '';
+            });
+
+            // Handle internal links (formatted as placeholders)
+            markdown = markdown.replace(/\[\[(.*?)\]\]/g, (match, link) => {
+                paragraphs.push(
+                    new docx.Paragraph({
+                        children: [
+                            new docx.TextRun({
+                                text: `[Internal link: ${link}]`,
+                                italics: true,
+                                color: '#6c757d'
+                            })
+                        ],
+                        spacing: { before: 100, after: 100 }
+                    })
+                );
+                return '';
             });
 
             // Add remaining content
