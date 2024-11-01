@@ -7,7 +7,7 @@
     <title>Obsidian Markdown to DOCX Converter</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
     <style>
         .callout {
             padding: 1rem;
@@ -81,6 +81,7 @@
     </div>
 
     <script>
+        const { Document, Paragraph, TextRun, Packer } = window.docx;
         const fileInput = document.getElementById('mdFile');
         const preview = document.getElementById('preview');
         const convertBtn = document.getElementById('convertBtn');
@@ -181,9 +182,9 @@
             const calloutRegex = />\[!(info|warning|note)\]-?\s*\n>(.*?)(?=\n\n|\n(?!>)|$)/gs;
             markdown = markdown.replace(calloutRegex, (match, type, content) => {
                 paragraphs.push(
-                    new docx.Paragraph({
+                    new Paragraph({
                         children: [
-                            new docx.TextRun({
+                            new TextRun({
                                 text: `[${type.toUpperCase()}] ${content.trim()}`,
                                 bold: true
                             })
@@ -197,9 +198,9 @@
             // Handle checkboxes
             markdown = markdown.replace(/- \[(x| )\] (.*)/g, (match, checked, text) => {
                 paragraphs.push(
-                    new docx.Paragraph({
+                    new Paragraph({
                         children: [
-                            new docx.TextRun({
+                            new TextRun({
                                 text: `${checked === 'x' ? '☒' : '☐'} ${text}`,
                             })
                         ],
@@ -212,9 +213,9 @@
             // Handle code blocks
             markdown = markdown.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
                 paragraphs.push(
-                    new docx.Paragraph({
+                    new Paragraph({
                         children: [
-                            new docx.TextRun({
+                            new TextRun({
                                 text: code.trim(),
                                 font: 'Courier New'
                             })
@@ -233,9 +234,9 @@
             // Handle embedded content
             markdown = markdown.replace(/!\[(.+?)\]\((.+?)\)/g, (match, alt, src) => {
                 paragraphs.push(
-                    new docx.Paragraph({
+                    new Paragraph({
                         children: [
-                            new docx.TextRun({
+                            new TextRun({
                                 text: `[Embedded content: ${alt}]`
                             })
                         ],
@@ -248,9 +249,9 @@
             // Handle math equations
             markdown = markdown.replace(/\$\$(.*?)\$\$/g, (match, equation) => {
                 paragraphs.push(
-                    new docx.Paragraph({
+                    new Paragraph({
                         children: [
-                            new docx.TextRun({
+                            new TextRun({
                                 text: `[Math equation: ${equation}]`
                             })
                         ],
@@ -263,9 +264,9 @@
             // Handle footnotes
             markdown = markdown.replace(/\[\^(.*?)\]/g, (match, footnote) => {
                 paragraphs.push(
-                    new docx.Paragraph({
+                    new Paragraph({
                         children: [
-                            new docx.TextRun({
+                            new TextRun({
                                 text: `[Footnote: ${footnote}]`
                             })
                         ],
@@ -278,9 +279,9 @@
             // Handle internal links (formatted as placeholders)
             markdown = markdown.replace(/\[\[(.*?)\]\]/g, (match, link) => {
                 paragraphs.push(
-                    new docx.Paragraph({
+                    new Paragraph({
                         children: [
-                            new docx.TextRun({
+                            new TextRun({
                                 text: `[Internal link: ${link}]`,
                                 italics: true,
                                 color: '#6c757d'
@@ -297,9 +298,9 @@
             lines.forEach(line => {
                 if (line.trim()) {
                     paragraphs.push(
-                        new docx.Paragraph({
+                        new Paragraph({
                             children: [
-                                new docx.TextRun({
+                                new TextRun({
                                     text: line
                                 })
                             ]
@@ -314,7 +315,7 @@
         convertBtn.addEventListener('click', async () => {
             const paragraphs = markdownToDocxParagraphs(markdownContent);
 
-            const doc = new docx.Document({
+            const doc = new Document({
                 sections: [{
                     properties: {},
                     children: paragraphs
@@ -322,7 +323,7 @@
             });
 
             // Generate the document
-            const blob = await docx.Packer.toBlob(doc);
+            const blob = await Packer.toBlob(doc);
 
             // Create download link
             const url = window.URL.createObjectURL(blob);
