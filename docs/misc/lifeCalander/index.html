@@ -237,6 +237,7 @@
             const deselectWeekBtn = document.getElementById('deselect-week');
             const saveQueryParamsBtn = document.getElementById('save-queryParams');
 
+            const defaultLocalStorage = { "notes": {}, "birthdate": "", "visualizationTitle": "" }
             let selectedDot = null;
             let currentWeekIndex = null;
             let notes = {};
@@ -263,9 +264,10 @@
                     }
                 } else {
                     // If no query parameters, use localStorage
-                    notes = JSON.parse(localStorage.getItem('weekNotes') || '{}');
-                    const savedDate = localStorage.getItem('birthdate');
-                    const savedTitle = localStorage.getItem('visualizationTitle');
+                    const data = JSON.parse(localStorage.getItem('LocalNodeBox-LifeCalander') || JSON.stringify(defaultLocalStorage));
+                    notes = data.notes;
+                    const savedDate = data.birthdate;
+                    const savedTitle = data.visualizationTitle;
 
                     saveQueryParamsBtn.style.display = 'none';
                     if (savedDate) {
@@ -332,7 +334,9 @@
                     }
 
                     if (!hasQueryParams) {
-                        localStorage.setItem('weekNotes', JSON.stringify(notes));
+                        const localData = JSON.parse(localStorage.getItem('LocalNodeBox-LifeCalander') || JSON.stringify(defaultLocalStorage));
+                        localData.notes = notes;
+                        localStorage.setItem('LocalNodeBox-LifeCalander', JSON.stringify(localData));
                     } else {
                         showExportReminder();
                     }
@@ -347,7 +351,9 @@
                     selectedDot.classList.remove('has-note');
 
                     if (!hasQueryParams) {
-                        localStorage.setItem('weekNotes', JSON.stringify(notes));
+                        const localData = JSON.parse(localStorage.getItem('LocalNodeBox-LifeCalander') || JSON.stringify(defaultLocalStorage));
+                        localData.notes = notes;
+                        localStorage.setItem('LocalNodeBox-LifeCalander', JSON.stringify(localData));
                     } else {
                         showExportReminder();
                     }
@@ -468,7 +474,9 @@
                 `;
 
                 if (!hasQueryParams) {
-                    localStorage.setItem('birthdate', birthdateInput.value);
+                    const localData = JSON.parse(localStorage.getItem('LocalNodeBox-LifeCalander') || JSON.stringify(defaultLocalStorage));
+                    localData.birthdate = birthdateInput.value;
+                    localStorage.setItem('LocalNodeBox-LifeCalander', JSON.stringify(localData));
                 } else {
                     if (!initial) {
                         showExportReminder();
@@ -481,7 +489,9 @@
                 visualizationTitleDisplay.textContent = title;
 
                 if (!hasQueryParams) {
-                    localStorage.setItem('visualizationTitle', title);
+                    const localData = JSON.parse(localStorage.getItem('LocalNodeBox-LifeCalander') || JSON.stringify(defaultLocalStorage));
+                    localData.visualizationTitle = title;
+                    localStorage.setItem('LocalNodeBox-LifeCalander', JSON.stringify(localData));
                 } else {
                     showExportReminder();
                 }
@@ -504,9 +514,12 @@
             saveQueryParamsBtn.addEventListener('click', () => {
                 if (confirm('This will overwrite the data that might already be saved. Continue?')) {
                     // converts queryparams to localstorage
-                    localStorage.setItem('weekNotes', JSON.stringify(notes));
-                    localStorage.setItem('birthdate', birthdateInput.value);
-                    localStorage.setItem('visualizationTitle', visualizationTitle.value);
+                    const data = {
+                        birthdate: birthdateInput.value,
+                        notes: notes,
+                        visualizationTitle: visualizationTitle.value
+                    };
+                    localStorage.setItem('LocalNodeBox-LifeCalander', JSON.stringify(data));
 
                     // remove query params
                     const url = new URL(window.location.href);
