@@ -97,6 +97,13 @@
             color: #6c757d;
             font-style: italic;
         }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
     </style>
 </head>
 
@@ -148,6 +155,17 @@
         <div id="weeks-container"></div>
     </div>
 
+    <!-- Toast notification -->
+    <div class="toast align-items-center text-white bg-primary" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                Export Data to save changes
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                aria-label="Close"></button>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -163,11 +181,20 @@
             let selectedDot = null;
             let currentWeekIndex = null;
             let notes = {};
+            let hasQueryParams = false;
+
+            // Initialize toast
+            const toast = new bootstrap.Toast(document.querySelector('.toast'), {
+                autohide: false,
+                delay: 3000
+            });
+
 
             // Check for query parameters first
             const urlParams = new URLSearchParams(window.location.search);
             try {
                 if (urlParams.has('data')) {
+                    hasQueryParams = true;
                     const importedData = JSON.parse(atob(urlParams.get('data')));
                     birthdateInput.value = importedData.birthdate;
                     notes = importedData.notes;
@@ -186,6 +213,12 @@
             } catch (e) {
                 console.error('Error parsing imported data:', e);
                 notes = {};
+            }
+
+            function showExportReminder() {
+                if (hasQueryParams) {
+                    toast.show();
+                }
             }
 
             function isValidDate(date) {
@@ -227,8 +260,10 @@
                         selectedDot.classList.remove('has-note');
                     }
 
-                    if (!urlParams.has('data')) {
+                    if (!hasQueryParams) {
                         localStorage.setItem('weekNotes', JSON.stringify(notes));
+                    } else {
+                        showExportReminder();
                     }
                 }
             }
@@ -284,7 +319,7 @@
                 `;
             }
 
-            function generateDots() {
+            function generateDots(initial = false) {
                 const birthdate = new Date(birthdateInput.value);
                 const today = new Date();
 
@@ -306,12 +341,12 @@
                 const childhoodWeeks = 12 * 52;
                 const teenageWeeks = 18 * 52;
 
-                // Calculate weeks until 100 years old
-                const weeksTo100 = 100 * 52;
+                // Calculate total weeks to show (from birthdate to birthdate + 100 years)
+                const hundredYearsFromBirth = new Date(birthdate);
+                hundredYearsFromBirth.setFullYear(hundredYearsFromBirth.getFullYear() + 100);
+                const totalWeeks = Math.ceil((hundredYearsFromBirth - birthdate) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
-                const weeksToShow = weeksTo100;
-
-                for (let i = 0; i < weeksToShow; i++) {
+                for (let i = 0; i < totalWeeks; i++) {
                     const dot = document.createElement('div');
                     dot.className = 'week-dot';
 
@@ -337,15 +372,19 @@
                 const yearsLived = (weeksLived / 52).toFixed(1);
                 statsDiv.innerHTML = `
                     You've lived approximately ${weeksLived} weeks (${yearsLived} years)<br>
-                    That's ${((weeksLived / weeksToShow) * 100).toFixed(1)}% of 100 years
+                    That's ${((weeksLived / totalWeeks) * 100).toFixed(1)}% of your first 100 years
                 `;
 
-                if (!urlParams.has('data')) {
+                if (!hasQueryParams) {
                     localStorage.setItem('birthdate', birthdateInput.value);
+                } else {
+                    if (!initial) {
+                        showExportReminder();
+                    }
                 }
             }
 
-            generateDots();
+            generateDots(true);
 
             birthdateInput.addEventListener('change', generateDots);
             saveNoteBtn.addEventListener('click', saveNote);
