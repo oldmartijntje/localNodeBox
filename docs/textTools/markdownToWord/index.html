@@ -81,7 +81,7 @@
     </div>
 
     <script>
-        const { Document, Paragraph, TextRun, Packer } = window.docx;
+        const { Document, Paragraph, TextRun, Packer, HeadingLevel, ExternalHyperlink } = window.docx;
         const fileInput = document.getElementById('mdFile');
         const preview = document.getElementById('preview');
         const convertBtn = document.getElementById('convertBtn');
@@ -89,6 +89,16 @@
 
         // Custom renderer for Obsidian-specific features
         const renderer = new marked.Renderer();
+
+        // Handle headers in preview
+        renderer.heading = function (text, level) {
+            return `<h${level}>${text}</h${level}>`;
+        };
+
+        // Handle links in preview
+        renderer.link = function (href, title, text) {
+            return `<a href="${href}" ${title ? `title="${title}"` : ''}>${text}</a>`;
+        };
 
         // Handle Obsidian checkboxes
         renderer.listitem = function (text) {
@@ -178,134 +188,78 @@
         function markdownToDocxParagraphs(markdown) {
             const paragraphs = [];
 
-            // Handle callouts
-            const calloutRegex = />\[!(info|warning|note)\]-?\s*\n>(.*?)(?=\n\n|\n(?!>)|$)/gs;
-            markdown = markdown.replace(calloutRegex, (match, type, content) => {
+            // Handle headers
+            const headerRegex = /^(#{1,6})\s+(.+)$/gm;
+            markdown = markdown.replace(headerRegex, (match, hashes, text) => {
+                const level = hashes.length;
                 paragraphs.push(
                     new Paragraph({
-                        children: [
-                            new TextRun({
-                                text: `[${type.toUpperCase()}] ${content.trim()}`,
-                                bold: true
-                            })
-                        ],
+                        text: text.trim(),
+                        heading: {
+                            level: level === 1 ? HeadingLevel.HEADING_1 :
+                                level === 2 ? HeadingLevel.HEADING_2 :
+                                    level === 3 ? HeadingLevel.HEADING_3 :
+                                        level === 4 ? HeadingLevel.HEADING_4 :
+                                            level === 5 ? HeadingLevel.HEADING_5 :
+                                                HeadingLevel.HEADING_6
+                        },
                         spacing: { before: 200, after: 200 }
                     })
                 );
                 return '';
             });
 
-            // Handle checkboxes
-            markdown = markdown.replace(/- \[(x| )\] (.*)/g, (match, checked, text) => {
+            // Handle external links
+            const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+            markdown = markdown.replace(linkRegex, (match, text, url) => {
                 paragraphs.push(
                     new Paragraph({
                         children: [
-                            new TextRun({
-                                text: `${checked === 'x' ? '☒' : '☐'} ${text}`,
+                            new ExternalHyperlink({
+                                children: [
+                                    new TextRun({
+                                        text: text,
+                                        style: "Hyperlink"
+                                    })
+                                ],
+                                link: url
                             })
-                        ],
-                        spacing: { before: 100, after: 100 }
+                        ]
                     })
                 );
                 return '';
             });
 
-            // Handle code blocks
-            markdown = markdown.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                paragraphs.push(
-                    new Paragraph({
-                        children: [
-                            new TextRun({
-                                text: code.trim(),
-                                font: 'Courier New'
-                            })
-                        ],
-                        spacing: { before: 200, after: 200 }
-                    })
-                );
-                return '';
-            });
+            // Previous Obsidian-specific conversions remain the same
 
-            // Handle hashtags
-            markdown = markdown.replace(/#(\w+)/g, (match, tag) => {
-                return `[TAG: ${tag}]`;
-            });
-
-            // Handle embedded content
-            markdown = markdown.replace(/!\[(.+?)\]\((.+?)\)/g, (match, alt, src) => {
-                paragraphs.push(
-                    new Paragraph({
-                        children: [
-                            new TextRun({
-                                text: `[Embedded content: ${alt}]`
-                            })
-                        ],
-                        spacing: { before: 200, after: 200 }
-                    })
-                );
-                return '';
-            });
-
-            // Handle math equations
-            markdown = markdown.replace(/\$\$(.*?)\$\$/g, (match, equation) => {
-                paragraphs.push(
-                    new Paragraph({
-                        children: [
-                            new TextRun({
-                                text: `[Math equation: ${equation}]`
-                            })
-                        ],
-                        spacing: { before: 200, after: 200 }
-                    })
-                );
-                return '';
-            });
-
-            // Handle footnotes
-            markdown = markdown.replace(/\[\^(.*?)\]/g, (match, footnote) => {
-                paragraphs.push(
-                    new Paragraph({
-                        children: [
-                            new TextRun({
-                                text: `[Footnote: ${footnote}]`
-                            })
-                        ],
-                        spacing: { before: 100, after: 100 }
-                    })
-                );
-                return '';
-            });
-
-            // Handle internal links (formatted as placeholders)
-            markdown = markdown.replace(/\[\[(.*?)\]\]/g, (match, link) => {
-                paragraphs.push(
-                    new Paragraph({
-                        children: [
-                            new TextRun({
-                                text: `[Internal link: ${link}]`,
-                                italics: true,
-                                color: '#6c757d'
-                            })
-                        ],
-                        spacing: { before: 100, after: 100 }
-                    })
-                );
-                return '';
-            });
-
-            // Add remaining content
+            // Handle remaining content with inline formatting
             const lines = markdown.split('\n');
             lines.forEach(line => {
                 if (line.trim()) {
-                    paragraphs.push(
-                        new Paragraph({
-                            children: [
-                                new TextRun({
-                                    text: line
-                                })
-                            ]
-                        })
-                    );
+                    // Handle basic inline formatting
+                    const children = [];
+                    let currentText = line;
+
+                    // Bold
+                    currentText = currentText.replace(/\*\*(.*?)\*\*/g, (match, text) => {
+                        children.push(new TextRun({ text, bold: true }));
+                        return '';
+                    });
+
+                    // Italic
+                    currentText = currentText.replace(/\*(.*?)\*/g, (match, text) => {
+                        children.push(new TextRun({ text, italics: true }));
+                        return '';
+                    });
+
+                    // Add remaining text
+                    if (currentText.trim()) {
+                        children.push(new TextRun(currentText));
+                    }
+
+                    if (children.length > 0) {
+                        paragraphs.push(new Paragraph({ children }));
+                    }
                 }
             });
 
