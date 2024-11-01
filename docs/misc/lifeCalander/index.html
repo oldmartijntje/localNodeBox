@@ -14,6 +14,15 @@
             border: 1px solid #ccc;
             display: inline-block;
             margin: 1px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .week-dot.selected {
+            transform: scale(1.5);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+            position: relative;
         }
 
         .childhood {
@@ -66,6 +75,14 @@
             margin-top: 10px;
             display: none;
         }
+
+        .selected-info {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
     </style>
 </head>
 
@@ -81,6 +98,7 @@
                         <input type="date" id="birthdate" class="form-control">
                         <div id="error-message" class="error-message">Invalid date selected</div>
                         <div class="stats" id="stats"></div>
+                        <div class="selected-info" id="selected-info"></div>
                     </div>
                 </div>
             </div>
@@ -111,6 +129,8 @@
             const weeksContainer = document.getElementById('weeks-container');
             const statsDiv = document.getElementById('stats');
             const errorMessage = document.getElementById('error-message');
+            const selectedInfo = document.getElementById('selected-info');
+            let selectedDot = null;
 
             // Set initial date from localStorage or default to 18 years ago
             const savedDate = localStorage.getItem('birthdate');
@@ -126,9 +146,48 @@
             function isValidDate(date) {
                 const today = new Date();
                 const minDate = new Date();
-                minDate.setFullYear(today.getFullYear() - 150); // 150 years ago
-
+                minDate.setFullYear(today.getFullYear() - 150);
                 return date <= today && date >= minDate;
+            }
+
+            function formatDate(date) {
+                return date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            }
+
+            function getDateForWeek(birthdate, weekIndex) {
+                const date = new Date(birthdate);
+                date.setDate(date.getDate() + (weekIndex * 7));
+                return date;
+            }
+
+            function selectDot(dot, weekIndex) {
+                // Remove previous selection
+                if (selectedDot) {
+                    selectedDot.classList.remove('selected');
+                }
+
+                // Add new selection
+                dot.classList.add('selected');
+                selectedDot = dot;
+
+                // Calculate date and age for selected week
+                const birthdate = new Date(birthdateInput.value);
+                const weekDate = getDateForWeek(birthdate, weekIndex);
+                const daysOld = weekIndex * 7;
+                const yearsOld = (daysOld / 365.25).toFixed(2);
+
+                // Update selected info display
+                selectedInfo.style.display = 'block';
+                selectedInfo.innerHTML = `
+                    <strong>Selected Week ${weekIndex + 1}</strong><br>
+                    Age: ${yearsOld} years (${daysOld} days)<br>
+                    Date: ${formatDate(weekDate)}
+                `;
             }
 
             // Generate dots
@@ -146,16 +205,18 @@
                 }
 
                 errorMessage.style.display = 'none';
+                selectedInfo.style.display = 'none';
                 weeksContainer.innerHTML = '';
+                selectedDot = null;
 
                 // Calculate weeks lived and total weeks needed
                 const weeksLived = Math.floor((today - birthdate) / (7 * 24 * 60 * 60 * 1000));
-                const childhoodWeeks = 12 * 52;  // 12 years
-                const teenageWeeks = 18 * 52;    // 18 years
+                const childhoodWeeks = 12 * 52;
+                const teenageWeeks = 18 * 52;
 
-                // Calculate total weeks to display (minimum 5200, maximum 7800 for 150 years)
+                // Calculate total weeks to display
                 const totalWeeks = Math.max(5200, Math.ceil(weeksLived / 52) * 52 + 52);
-                const maxWeeks = 150 * 52; // 150 years
+                const maxWeeks = 150 * 52;
                 const weeksToShow = Math.min(totalWeeks, maxWeeks);
 
                 // Create dots
@@ -171,6 +232,9 @@
                         } else {
                             dot.classList.add('adult');
                         }
+
+                        // Add click handler only for lived weeks
+                        dot.addEventListener('click', () => selectDot(dot, i));
                     }
 
                     weeksContainer.appendChild(dot);
