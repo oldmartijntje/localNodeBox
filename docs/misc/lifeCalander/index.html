@@ -176,6 +176,8 @@
                             </div>
                         </div>
                         <button id="export-data" class="btn btn-secondary mt-3">Export Data</button>
+                        <button id="save-queryParams" class="btn btn-warning mt-3" style="display:none">Save
+                            Data</button>
                     </div>
                 </div>
             </div>
@@ -232,6 +234,7 @@
             const visualizationTitle = document.getElementById('visualization-title');
             const visualizationTitleDisplay = document.getElementById('visualization-title-display');
             const deselectWeekBtn = document.getElementById('deselect-week');
+            const saveQueryParamsBtn = document.getElementById('save-queryParams');
 
             let selectedDot = null;
             let currentWeekIndex = null;
@@ -251,6 +254,7 @@
                     hasQueryParams = true;
                     const importedData = JSON.parse(atob(urlParams.get('data')));
                     birthdateInput.value = importedData.birthdate;
+                    saveQueryParamsBtn.style.display = 'inline-block';
                     notes = importedData.notes;
                     if (importedData.title) {
                         visualizationTitle.value = importedData.title;
@@ -262,6 +266,7 @@
                     const savedDate = localStorage.getItem('birthdate');
                     const savedTitle = localStorage.getItem('visualizationTitle');
 
+                    saveQueryParamsBtn.style.display = 'none';
                     if (savedDate) {
                         birthdateInput.value = savedDate;
                     } else {
@@ -494,6 +499,19 @@
                 }
                 selectedInfo.style.display = 'none';
                 currentWeekIndex = null;
+            });
+            saveQueryParamsBtn.addEventListener('click', () => {
+                if (confirm('This will overwrite the data that might already be saved. Continue?')) {
+                    // converts queryparams to localstorage
+                    localStorage.setItem('weekNotes', JSON.stringify(notes));
+                    localStorage.setItem('birthdate', birthdateInput.value);
+                    localStorage.setItem('visualizationTitle', visualizationTitle.value);
+
+                    // remove query params
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('data');
+                    window.location.href = url.href;
+                }
             });
             visualizationTitle.addEventListener('input', updateTitle);
             weekNote.addEventListener('keydown', function (e) {
