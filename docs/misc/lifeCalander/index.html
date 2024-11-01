@@ -7,6 +7,7 @@
     <title>Life in Weeks</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        /* Previous styles remain the same */
         .week-dot {
             width: 8px;
             height: 8px;
@@ -119,6 +120,7 @@
                                 <button id="save-note" class="btn btn-primary mt-2">Save Note</button>
                             </div>
                         </div>
+                        <button id="export-data" class="btn btn-secondary mt-3">Export Data</button>
                     </div>
                 </div>
             </div>
@@ -157,18 +159,33 @@
             const weekInfo = document.getElementById('week-info');
             const weekNote = document.getElementById('week-note');
             const saveNoteBtn = document.getElementById('save-note');
+            const exportBtn = document.getElementById('export-data');
             let selectedDot = null;
             let currentWeekIndex = null;
-            let notes = JSON.parse(localStorage.getItem('weekNotes') || '{}');
+            let notes = {};
 
-            const savedDate = localStorage.getItem('birthdate');
-            const defaultDate = new Date();
-            defaultDate.setFullYear(defaultDate.getFullYear() - 18);
-
-            if (savedDate) {
-                birthdateInput.value = savedDate;
-            } else {
-                birthdateInput.valueAsDate = defaultDate;
+            // Check for query parameters first
+            const urlParams = new URLSearchParams(window.location.search);
+            try {
+                if (urlParams.has('data')) {
+                    const importedData = JSON.parse(atob(urlParams.get('data')));
+                    birthdateInput.value = importedData.birthdate;
+                    notes = importedData.notes;
+                } else {
+                    // If no query parameters, use localStorage
+                    notes = JSON.parse(localStorage.getItem('weekNotes') || '{}');
+                    const savedDate = localStorage.getItem('birthdate');
+                    if (savedDate) {
+                        birthdateInput.value = savedDate;
+                    } else {
+                        const defaultDate = new Date();
+                        defaultDate.setFullYear(defaultDate.getFullYear() - 18);
+                        birthdateInput.valueAsDate = defaultDate;
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing imported data:', e);
+                notes = {};
             }
 
             function isValidDate(date) {
@@ -210,8 +227,27 @@
                         selectedDot.classList.remove('has-note');
                     }
 
-                    localStorage.setItem('weekNotes', JSON.stringify(notes));
+                    if (!urlParams.has('data')) {
+                        localStorage.setItem('weekNotes', JSON.stringify(notes));
+                    }
                 }
+            }
+
+            function exportData() {
+                const data = {
+                    birthdate: birthdateInput.value,
+                    notes: notes
+                };
+                const encoded = btoa(JSON.stringify(data));
+                const url = new URL(window.location.href);
+                url.searchParams.set('data', encoded);
+
+                // Copy to clipboard
+                navigator.clipboard.writeText(url.href).then(() => {
+                    alert('Link copied to clipboard!');
+                }).catch(() => {
+                    alert('URL: ' + url.href);
+                });
             }
 
             function selectDot(dot, weekIndex) {
@@ -270,9 +306,10 @@
                 const childhoodWeeks = 12 * 52;
                 const teenageWeeks = 18 * 52;
 
-                const totalWeeks = Math.max(5200, Math.ceil(weeksLived / 52) * 52 + 52);
-                const maxWeeks = 150 * 52;
-                const weeksToShow = Math.min(totalWeeks, maxWeeks);
+                // Calculate weeks until 100 years old
+                const weeksTo100 = 100 * 52;
+
+                const weeksToShow = weeksTo100;
 
                 for (let i = 0; i < weeksToShow; i++) {
                     const dot = document.createElement('div');
@@ -298,19 +335,21 @@
                 }
 
                 const yearsLived = (weeksLived / 52).toFixed(1);
-                const totalYears = (weeksToShow / 52).toFixed(0);
                 statsDiv.innerHTML = `
                     You've lived approximately ${weeksLived} weeks (${yearsLived} years)<br>
-                    That's ${((weeksLived / weeksToShow) * 100).toFixed(1)}% of ${totalYears} years
+                    That's ${((weeksLived / weeksToShow) * 100).toFixed(1)}% of 100 years
                 `;
 
-                localStorage.setItem('birthdate', birthdateInput.value);
+                if (!urlParams.has('data')) {
+                    localStorage.setItem('birthdate', birthdateInput.value);
+                }
             }
 
             generateDots();
 
             birthdateInput.addEventListener('change', generateDots);
             saveNoteBtn.addEventListener('click', saveNote);
+            exportBtn.addEventListener('click', exportData);
             weekNote.addEventListener('keydown', function (e) {
                 if (e.ctrlKey && e.key === 'Enter') {
                     saveNote();
