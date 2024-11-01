@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life in Weeks</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .week-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            display: inline-block;
+            margin: 1px;
+        }
+
+        .childhood {
+            background-color: #FF9999;
+            border-color: #FF6666;
+        }
+
+        .teenage {
+            background-color: #99FF99;
+            border-color: #66FF66;
+        }
+
+        .adult {
+            background-color: #9999FF;
+            border-color: #6666FF;
+        }
+
+        #weeks-container {
+            max-width: 900px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .stats {
+            margin: 20px 0;
+            font-size: 1.2em;
+        }
+
+        .legend {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .legend-item {
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        .error-message {
+            color: #dc3545;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Life in Weeks</h1>
+
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Select your birthdate</h5>
+                        <input type="date" id="birthdate" class="form-control">
+                        <div id="error-message" class="error-message">Invalid date selected</div>
+                        <div class="stats" id="stats"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background-color: #FF9999; border: 1px solid #FF6666;"></div>
+                <span>Childhood (0-12)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background-color: #99FF99; border: 1px solid #66FF66;"></div>
+                <span>Teenage (12-18)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background-color: #9999FF; border: 1px solid #6666FF;"></div>
+                <span>Adult (18+)</span>
+            </div>
+        </div>
+
+        <div id="weeks-container"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const birthdateInput = document.getElementById('birthdate');
+            const weeksContainer = document.getElementById('weeks-container');
+            const statsDiv = document.getElementById('stats');
+            const errorMessage = document.getElementById('error-message');
+
+            // Set initial date from localStorage or default to 18 years ago
+            const savedDate = localStorage.getItem('birthdate');
+            const defaultDate = new Date();
+            defaultDate.setFullYear(defaultDate.getFullYear() - 18);
+
+            if (savedDate) {
+                birthdateInput.value = savedDate;
+            } else {
+                birthdateInput.valueAsDate = defaultDate;
+            }
+
+            function isValidDate(date) {
+                const today = new Date();
+                const minDate = new Date();
+                minDate.setFullYear(today.getFullYear() - 150); // 150 years ago
+
+                return date <= today && date >= minDate;
+            }
+
+            // Generate dots
+            function generateDots() {
+                const birthdate = new Date(birthdateInput.value);
+                const today = new Date();
+
+                // Validate date
+                if (!isValidDate(birthdate)) {
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = birthdate > today ?
+                        "Birthdate cannot be in the future" :
+                        "Birthdate cannot be more than 150 years ago";
+                    return;
+                }
+
+                errorMessage.style.display = 'none';
+                weeksContainer.innerHTML = '';
+
+                // Calculate weeks lived and total weeks needed
+                const weeksLived = Math.floor((today - birthdate) / (7 * 24 * 60 * 60 * 1000));
+                const childhoodWeeks = 12 * 52;  // 12 years
+                const teenageWeeks = 18 * 52;    // 18 years
+
+                // Calculate total weeks to display (minimum 5200, maximum 7800 for 150 years)
+                const totalWeeks = Math.max(5200, Math.ceil(weeksLived / 52) * 52 + 52);
+                const maxWeeks = 150 * 52; // 150 years
+                const weeksToShow = Math.min(totalWeeks, maxWeeks);
+
+                // Create dots
+                for (let i = 0; i < weeksToShow; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'week-dot';
+
+                    if (i < weeksLived) {
+                        if (i < childhoodWeeks) {
+                            dot.classList.add('childhood');
+                        } else if (i < teenageWeeks) {
+                            dot.classList.add('teenage');
+                        } else {
+                            dot.classList.add('adult');
+                        }
+                    }
+
+                    weeksContainer.appendChild(dot);
+                }
+
+                // Update stats
+                const yearsLived = (weeksLived / 52).toFixed(1);
+                const totalYears = (weeksToShow / 52).toFixed(0);
+                statsDiv.innerHTML = `
+                    You've lived approximately ${weeksLived} weeks (${yearsLived} years)<br>
+                    That's ${((weeksLived / weeksToShow) * 100).toFixed(1)}% of ${totalYears} years
+                `;
+
+                // Save to localStorage
+                localStorage.setItem('birthdate', birthdateInput.value);
+            }
+
+            // Generate initial visualization
+            generateDots();
+
+            // Update on date change
+            birthdateInput.addEventListener('change', generateDots);
+        });
+    </script>
+</body>
+
+</html>
