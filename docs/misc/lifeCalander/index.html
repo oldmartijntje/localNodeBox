@@ -179,6 +179,7 @@
                         <button id="export-data" class="btn btn-secondary mt-3">Export Data</button>
                         <button id="save-queryParams" class="btn btn-warning mt-3" style="display:none">Save
                             Data</button>
+                        <button id="shuffle-comparison" class="btn btn-primary mt-3">Shuffle Comparison</button>
                     </div>
                 </div>
             </div>
@@ -236,6 +237,7 @@
             const visualizationTitleDisplay = document.getElementById('visualization-title-display');
             const deselectWeekBtn = document.getElementById('deselect-week');
             const saveQueryParamsBtn = document.getElementById('save-queryParams');
+            const shuffleComparisonBtn = document.getElementById('shuffle-comparison');
 
             const defaultLocalStorage = { "notes": {}, "birthdate": "", "visualizationTitle": "" }
             let selectedDot = null;
@@ -436,6 +438,7 @@
                 currentWeekIndex = null;
 
                 const weeksLived = Math.floor((today - birthdate) / (7 * 24 * 60 * 60 * 1000));
+                const minutesLived = Math.floor((today - birthdate) / (60 * 1000));
                 const childhoodWeeks = 12 * 52;
                 const teenageWeeks = 18 * 52;
 
@@ -469,8 +472,8 @@
 
                 const yearsLived = (weeksLived / 52).toFixed(1);
                 statsDiv.innerHTML = `
-                    You've lived approximately ${weeksLived} weeks (${yearsLived} years)<br>
-                    That's ${((weeksLived / totalWeeks) * 100).toFixed(1)}% of your first 100 years
+                    You've lived approximately ${weeksLived} weeks (${yearsLived} years)<br><br>
+                    ${timeSynonyms(minutesLived)}<br>
                 `;
 
                 if (!hasQueryParams) {
@@ -482,6 +485,65 @@
                         showExportReminder();
                     }
                 }
+            }
+
+            function timeSynonyms(time) {
+                const timeSynonyms = [
+                    {
+                        name: '<a href="https://i.imgur.com/rqeLS9q.png" target="_blank">this pizza\'s</a> preparation time (15m).',
+                        minutes: 15,
+                    },
+                    {
+                        name: 'a month.',
+                        minutes: 60 * 24 * 30,
+                    },
+                    {
+                        name: 'the average night of sleep.',
+                        minutes: 8 * 60,
+                    },
+                    {
+                        name: 'the time since we started counting dates for computers: January 1, 1970.',
+                        minutes: (new Date() - new Date('1970-01-01')) / 1000 / 60,
+                        rounding: 3
+                    },
+                    {
+                        name: 'the time since Christ was born. (January 1, 1 AD)',
+                        minutes: Math.floor((new Date() - new Date(0)) / (1000 / 60)),
+                        rounding: 8
+                    },
+                    {
+                        name: 'the time it takes to watch the entire Lord of the Rings trilogy.',
+                        minutes: 178 + 179 + 201,
+                    },
+                    {
+                        name: 'the length of Avenger Endgame.',
+                        minutes: 181,
+                    },
+                    {
+                        name: 'The average time for a baby to be born.',
+                        minutes: 60 * 24 * 30.5 * 9,
+                    },
+                    {
+                        name: 'the <a href="https://www.speedrun.com/doom1/runs/mr217r7y" target="_blank">current speedrun world-record<a> on the <a href="https://www.speedrun.com/doom1?h=Episodes_1-4-UV-Speed&x=zd35gvkn-6nj1vjn4.9qj778gq" target="_blank">original DOOM game<a>.',
+                        minutes: 20.63,
+                    },
+                    {
+                        name: 'the length of the song "<a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Never gonna give you up</a>" by Rick Astley.',
+                        minutes: 3.55
+                    },
+                    {
+                        name: 'the time it takes to drive from <a href="https://www.google.com/maps/dir/Rijksmuseum,+Museumstraat+1,+1071+XX+Amsterdam/Eiffel+Tower,+Avenue+Gustave+Eiffel,+Paris,+France/@50.5796636,1.0512154,7z/data=!3m1!4b1!4m14!4m13!1m5!1m1!1s0x47c609eec1bb16e5:0xd54373ae6a408585!2m2!1d4.8852188!2d52.3599976!1m5!1m1!1s0x47e66e2964e34e2d:0x8ddca9ee380ef7e0!2m2!1d2.2944813!2d48.8583701!3e0?entry=ttu&g_ep=EgoyMDI0MTAyOS4wIKXMDSoASAFQAw%3D%3D">Amsterdam to Paris.</a>',
+                        minutes: 6 * 60 + 22
+                    },
+                    {
+                        name: 'the time it takes to cycle from <a href="https://www.google.com/maps/dir/Rijksmuseum,+Museumstraat,+Amsterdam/Buckingham+Palace,+London+SW1A+1AA,+United+Kingdom/@51.6306555,1.0536134,8z/data=!3m2!4b1!5s0x487605276d38fb6b:0xe1c60228d7946675!4m14!4m13!1m5!1m1!1s0x47c609eec1bb16e5:0xd54373ae6a408585!2m2!1d4.8852188!2d52.3599976!1m5!1m1!1s0x48760520cd5b5eb5:0xa26abf514d902a7!2m2!1d-0.14189!2d51.501364!3e1?entry=ttu&g_ep=EgoyMDI0MTAyOS4wIKXMDSoASAFQAw%3D%3D">London to Amsterdam.</a>',
+                        minutes: 15 * 60 + 5
+                    }
+                ]
+
+                // get random synonym
+                const randomSynonym = timeSynonyms[Math.floor(Math.random() * timeSynonyms.length)];
+                return `${(time / randomSynonym.minutes).toFixed(randomSynonym.rounding || 1)} times the length of ${randomSynonym.name}`;
             }
 
             function updateTitle() {
@@ -532,6 +594,17 @@
                 if (e.ctrlKey && e.key === 'Enter') {
                     saveNote();
                 }
+            });
+            shuffleComparisonBtn.addEventListener('click', () => {
+                const birthdate = new Date(birthdateInput.value);
+                const today = new Date();
+                const weeksLived = Math.floor((today - birthdate) / (7 * 24 * 60 * 60 * 1000));
+                const minutesLived = Math.floor((today - birthdate) / (60 * 1000));
+                const yearsLived = (weeksLived / 52).toFixed(1);
+                statsDiv.innerHTML = `
+                    You've lived approximately ${weeksLived} weeks (${yearsLived} years)<br><br>
+                    ${timeSynonyms(minutesLived)}<br>
+                `;
             });
         });
     </script>
