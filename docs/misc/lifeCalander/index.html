@@ -340,8 +340,8 @@
                 const minutesLived = Math.floor((today - birthdate) / (60 * 1000));
                 const yearsLived = (weeksLived / 52).toFixed(1);
                 statsDiv.innerHTML = `
-                    You've lived approximately ${weeksLived} weeks (${yearsLived} years)<br><br>
-                    ${getTimeSynonyms(minutesLived, indexOfSynonym)} <i id="info-button" class="fa-solid fa-circle-info" style="font-size:13px;"></i><br>
+                    You've lived approximately ${weeksLived} weeks (${yearsLived} years).<br><br>
+                    Which is ${getTimeSynonyms(minutesLived, indexOfSynonym)} <i id="info-button" class="fa-solid fa-circle-info" style="font-size:13px;"></i><br>
                 `;
                 document.getElementById('info-button').addEventListener('click', () => {
                     alert('This might not be 100% accurate. Do your own research, don\'t trust me.');

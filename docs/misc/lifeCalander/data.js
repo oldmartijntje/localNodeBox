@@ -233,4 +233,123 @@ const timeSynonymList = [
         minutes: 6 * 60,
         rounding: 2
     },
+    {
+        name: 'the time it would take you to walk to the <a href="https://minecraft.wiki/w/Tutorials/Far_Lands" target="_blank">Minecraft Farlands</a> if you walk 1 block / second.',
+        minutes: 12550821 / 60,
+        rounding: 2
+    },
+    {
+        name: 'the time since Minecraft was first released.',
+        minutes: (new Date() - new Date('2011-11-18')) / 1000 / 60,
+        rounding: 2
+    },
+    {
+        name: 'the time since the author of this website was born. (first day of that month)',
+        minutes: (new Date() - new Date('2005-09-01')) / 1000 / 60,
+        rounding: 2
+    },
+    {
+        name: ((new Date() - new Date('2100-01-01')) / 1000 / 60) < 0 ? 'the time till we reach the year 2100.' : 'the time since we reached the year 2100.',
+        minutes: Math.abs((new Date() - new Date('2100-01-01')) / 1000 / 60),
+        rounding: 2
+    },
+    {
+        name: 'the time since the creation of this webpage.',
+        minutes: (new Date() - new Date('2024-11-01')) / 1000 / 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes to walk around the circumference of Earth. (assuming you walk 5 km/h)',
+        minutes: 40075 / 5 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it would take for a snail to cross the Golden Gate Bridge.',
+        minutes: 2737 / 0.048,
+        rounding: 2
+    },
+    {
+        name: 'the time needed to handwrite all of Shakespeare’s works. (assuming 10 words per minute)',
+        minutes: 884000 / 10,
+        rounding: 3
+    },
+    {
+        name: 'the time it takes to cook a Thanksgiving turkey.',
+        minutes: 3.5 * 60,
+    },
+    {
+        name: 'the time it would take to reach the moon on foot. (assuming you walk 5 km/h)',
+        minutes: 384400 * 1000 / 5 / 60,
+        rounding: 3
+    },
+    {
+        name: 'the time it would take to fly to Mars with current spacecraft technology.',
+        minutes: 9 * 30 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it would take to walk the length of the Great Wall of China. (assuming you walk 5 km/h)',
+        minutes: 21196 / 5 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the average time it takes for a cactus to bloom.',
+        minutes: 15 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes to assemble an average IKEA bookshelf.',
+        minutes: 2 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes on average for coral to grow one centimeter.',
+        minutes: 10 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it would take to binge-watch every Marvel movie released up to 2023.',
+        minutes: 3 * 24 * 60 + 21,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes for the Earth’s magnetic poles to reverse.',
+        minutes: 780000 * 365 * 24 * 60, // approx. 780,000 years
+        rounding: 6
+    },
+    {
+        name: 'the time it would take to write out all known digits of pi if you typed 1 digit per second.',
+        minutes: 314159 / 60,
+        rounding: 2
+    },
+    {
+        name: 'the time required for a rubber band to disintegrate naturally.',
+        minutes: 60 * 24 * 365 * 2,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes a cicada to live underground before emerging.',
+        minutes: 17 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes the creator of this website to shower (on average).',
+        minutes: 20,
+        rounding: 2
+    },
+    {
+        name: 'the time it\'ll take to essambe <a href="https://www.lego.com/en-us/product/x-men-the-x-mansion-76294" target="_blank">Lego set 76294</a> if you place 1 piece per minute. (3093 pieces)',
+        minutes: 3093,
+        rounding: 2
+    },
+    {
+        name: 'the time it\'ll take to essambe <a href="https://www.lego.com/en-us/product/eiffel-tower-10307" target="_blank">Lego set 10307</a> (eiffel tower) if you place 2 pieces per minute. (10001 pieces)',
+        minutes: 10001 / 2,
+        rounding: 2
+    },
+    {
+        name: 'the time it\'ll take to essambe <a href="https://www.lego.com/en-us/product/lego-titanic-10294" target="_blank">Lego set 10294</a> (Titanic) if you place 3 pieces per minute. (9090 pieces)',
+        minutes: 9090 / 3,
+        rounding: 2
+    }
 ]
