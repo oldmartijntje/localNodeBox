@@ -282,6 +282,7 @@
                 .then(response => {
                     if (response.ok) {
                         allTimeSynonyms = [...timeSynonyms, ...timeSynonymList];
+                        console.log(allTimeSynonyms.length)
                         allTimeSynonyms.reverse();
                         timeSynonymIndex = 0;
                         generateStats(0);
@@ -336,9 +337,9 @@
             function generateStats(indexOfSynonym) {
                 const birthdate = new Date(birthdateInput.value);
                 const today = new Date();
-                const weeksLived = Math.floor((today - birthdate) / (7 * 24 * 60 * 60 * 1000));
+                const weeksLived = Math.floor((today - birthdate) / (24 * 60 * 60 * 1000 * 7));
                 const minutesLived = Math.floor((today - birthdate) / (60 * 1000));
-                const yearsLived = (weeksLived / 52).toFixed(1);
+                const yearsLived = (weeksLived / 52.1775).toFixed(1);
                 statsDiv.innerHTML = `
                     You've lived approximately ${weeksLived} weeks (${yearsLived} years).<br><br>
                     Which is ${getTimeSynonyms(minutesLived, indexOfSynonym)} <i id="info-button" class="fa-solid fa-circle-info" style="font-size:13px;"></i><br>

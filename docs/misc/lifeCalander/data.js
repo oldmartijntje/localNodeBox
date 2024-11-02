@@ -66,7 +66,7 @@ const timeSynonymList = [
     },
     {
         name: 'the time it takes for a coffee plant to mature and produce its first beans.',
-        minutes: 3 * 365 * 24 * 60,
+        minutes: 3 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
@@ -132,7 +132,7 @@ const timeSynonymList = [
     },
     {
         name: 'the time it takes for a tree to grow one ring (one year of growth).',
-        minutes: 365 * 24 * 60,
+        minutes: 365.25 * 24 * 60,
         rounding: 2
     },
     {
@@ -146,32 +146,32 @@ const timeSynonymList = [
     },
     {
         name: 'the average lifespan of a smartphone before it\'s replaced.',
-        minutes: 2 * 365 * 24 * 60,
+        minutes: 2 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
         name: 'the time it takes to sail around the world on a traditional sailboat.',
-        minutes: 365 * 24 * 60,
+        minutes: 365.25 * 24 * 60,
         rounding: 2
     },
     {
         name: 'the time it takes to train a bonsai tree to full maturity.',
-        minutes: 10 * 365 * 24 * 60,
+        minutes: 10 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
         name: 'the average time it takes for a diamond to form naturally.',
-        minutes: 1000000 * 365 * 24 * 60,
+        minutes: 1000000 * 365.25 * 24 * 60,
         rounding: 6
     },
     {
         name: 'the time it takes for an average person to master a new language through regular practice.',
-        minutes: 2 * 365 * 24 * 60,
+        minutes: 2 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
         name: 'the time it takes for a bamboo plant to reach its maximum height.',
-        minutes: 5 * 365 * 24 * 60,
+        minutes: 5 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
@@ -190,7 +190,7 @@ const timeSynonymList = [
     },
     {
         name: 'the time it takes for Pluto to complete a full orbit around the Sun.',
-        minutes: 248 * 365 * 24 * 60,
+        minutes: 248 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
@@ -210,12 +210,12 @@ const timeSynonymList = [
     },
     {
         name: 'the time it would take to brute-force crack an <a href="https://i.imgur.com/Kbw4ljB.png" target="_blank">11-character alphanumeric</a> password with modern computing power (2021).',
-        minutes: 41 * 365 * 24 * 60,
+        minutes: 41 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
         name: 'the average lifespan of a solid-state drive (SSD) with typical usage.',
-        minutes: 5 * 365 * 24 * 60,
+        minutes: 5 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
@@ -225,7 +225,7 @@ const timeSynonymList = [
     },
     {
         name: 'the time it takes for a pixel on a high-quality OLED screen to burn in with static content.',
-        minutes: 2 * 365 * 24 * 60,
+        minutes: 2 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
@@ -294,7 +294,7 @@ const timeSynonymList = [
     },
     {
         name: 'the average time it takes for a cactus to bloom.',
-        minutes: 15 * 365 * 24 * 60,
+        minutes: 15 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
@@ -304,7 +304,7 @@ const timeSynonymList = [
     },
     {
         name: 'the time it takes on average for coral to grow one centimeter.',
-        minutes: 10 * 365 * 24 * 60,
+        minutes: 10 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
@@ -314,7 +314,7 @@ const timeSynonymList = [
     },
     {
         name: 'the time it takes for the Earth’s magnetic poles to reverse.',
-        minutes: 780000 * 365 * 24 * 60, // approx. 780,000 years
+        minutes: 780000 * 365.25 * 24 * 60, // approx. 780,000 years
         rounding: 6
     },
     {
@@ -324,12 +324,12 @@ const timeSynonymList = [
     },
     {
         name: 'the time required for a rubber band to disintegrate naturally.',
-        minutes: 60 * 24 * 365 * 2,
+        minutes: 60 * 24 * 365.25 * 2,
         rounding: 2
     },
     {
         name: 'the time it takes a cicada to live underground before emerging.',
-        minutes: 17 * 365 * 24 * 60,
+        minutes: 17 * 365.25 * 24 * 60,
         rounding: 2
     },
     {
