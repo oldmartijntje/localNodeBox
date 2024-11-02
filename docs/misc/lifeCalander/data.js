@@ -351,5 +351,10 @@ const timeSynonymList = [
         name: 'the time it\'ll take to essambe <a href="https://www.lego.com/en-us/product/lego-titanic-10294" target="_blank">Lego set 10294</a> (Titanic) if you place 3 pieces per minute. (9090 pieces)',
         minutes: 9090 / 3,
         rounding: 2
+    },
+    {
+        name: 'the time that shops have Sinterklaas Sweets in stock in the Netherlands.',
+        minutes: 60 * 24 * 80,
+        rounding: 2
     }
 ]
