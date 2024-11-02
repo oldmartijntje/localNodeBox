@@ -100,4 +100,137 @@ const timeSynonymList = [
         name: 'the time Duolingo users spend on the app per day.',
         minutes: 6.5
     },
+    {
+        name: 'how long it would take to type out the entire Bible if you\'d type 10 words / min.',
+        minutes: 807361 / 10
+    },
+    {
+        name: 'the time it takes to make mcdonalds fries.',
+        minutes: 2
+    },
+    {
+        name: "the average time for an ice cube to melt at room temperature.",
+        minutes: 15,
+    },
+    {
+        name: 'times the lenght of a <a href="https://www.speedrun.com/undertale?h=Neutral_Glitchless-1-00-1-001&x=wdmq7352-wl36m6vl.5lmnzgyq" target="_blank">world record glitchless neutral undertale speedrun</a>',
+        minutes: 63.5
+    },
+    {
+        name: "the time it takes for a hummingbird to flap its wings 1 million times.",
+        minutes: 100
+    },
+    {
+        name: "the time it takes to form a single centimeter of stalactite.",
+        minutes: 500000 * 24 * 60,
+        rounding: 3
+    },
+    {
+        name: "the time it takes for bamboo to grow one meter.",
+        minutes: 2880,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes for a tree to grow one ring (one year of growth).',
+        minutes: 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'times the length of watching the entirety of parkour civilization (both episodes)',
+        minutes: 227.59
+    },
+    {
+        name: 'the time it takes for a honey bee to produce one tablespoon of honey.',
+        minutes: 720 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the average lifespan of a smartphone before it\'s replaced.',
+        minutes: 2 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes to sail around the world on a traditional sailboat.',
+        minutes: 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes to train a bonsai tree to full maturity.',
+        minutes: 10 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the average time it takes for a diamond to form naturally.',
+        minutes: 1000000 * 365 * 24 * 60,
+        rounding: 6
+    },
+    {
+        name: 'the time it takes for an average person to master a new language through regular practice.',
+        minutes: 2 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes for a bamboo plant to reach its maximum height.',
+        minutes: 5 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes on average to play a 5/6 player game of Catan.',
+        minutes: 210,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes on average to play a 4 player game of Monopoly.',
+        minutes: 90
+    },
+    {
+        name: 'the time it takes a person to blink about 1.5 million times.',
+        minutes: 180 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes for Pluto to complete a full orbit around the Sun.',
+        minutes: 248 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes for an eyelash to grow back after being plucked.',
+        minutes: 8 * 7 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the average time it takes for a full computer reboot.',
+        minutes: 0.5,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes to write 1 gigabyte to a USB 2.0 flash drive.',
+        minutes: 3,
+        rounding: 1
+    },
+    {
+        name: 'the time it would take to brute-force crack an <a href="https://i.imgur.com/Kbw4ljB.png" target="_blank">11-character alphanumeric</a> password with modern computing power (2021).',
+        minutes: 41 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the average lifespan of a solid-state drive (SSD) with typical usage.',
+        minutes: 5 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the average time it takes for a human to type a 1,000-word document.',
+        minutes: 45,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes for a pixel on a high-quality OLED screen to burn in with static content.',
+        minutes: 2 * 365 * 24 * 60,
+        rounding: 2
+    },
+    {
+        name: 'the time it takes for an average player to complete all levels in Super Mario World.',
+        minutes: 6 * 60,
+        rounding: 2
+    },
 ]

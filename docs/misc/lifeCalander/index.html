@@ -253,8 +253,6 @@
                     minutes: 178 + 179 + 201,
                 }
             ]
-            const allTimeSynonyms = [...timeSynonyms, ...timeSynonymList];
-            allTimeSynonyms.sort(() => Math.random() - 0.5);
             const birthdateInput = document.getElementById('birthdate');
             const weeksContainer = document.getElementById('weeks-container');
             const statsDiv = document.getElementById('stats');
@@ -277,6 +275,18 @@
             let notes = {};
             let hasQueryParams = false;
             let timeSynonymIndex = 0;
+
+            let allTimeSynonyms = [...timeSynonyms, ...timeSynonymList];
+            allTimeSynonyms.sort(() => Math.random() - 0.5);
+            fetch('http://localhost:3030/ping')
+                .then(response => {
+                    if (response.ok) {
+                        allTimeSynonyms = [...timeSynonyms, ...timeSynonymList];
+                        allTimeSynonyms.reverse();
+                        timeSynonymIndex = 0;
+                        generateStats(0);
+                    }
+                })
 
             // Initialize toast
             const toast = new bootstrap.Toast(document.querySelector('.toast'), {
