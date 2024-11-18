@@ -123,90 +123,109 @@ function markdownToDocxParagraphs(markdown) {
     const headings = [];
     const links = [];
 
-    // Handle headers
+    // Handle headers first
     const headerRegex = /^(#{1,6})\s+(.+)$/gm;
     markdown = markdown.replace(headerRegex, (match, hashes, text) => {
         const level = hashes.length;
-        console.log(level, text);
         headings.push({
+            type: 'heading',
             text: text.trim(),
-            heading: {
-                level: level === 1 ? HeadingLevel.HEADING_1 :
-                    level === 2 ? HeadingLevel.HEADING_2 :
-                        level === 3 ? HeadingLevel.HEADING_3 :
-                            level === 4 ? HeadingLevel.HEADING_4 :
-                                level === 5 ? HeadingLevel.HEADING_5 :
-                                    HeadingLevel.HEADING_6
-            },
-            spacing: { before: 200, after: 200 }
-        }
-        );
+            level: level === 1 ? HeadingLevel.HEADING_1 :
+                level === 2 ? HeadingLevel.HEADING_2 :
+                    level === 3 ? HeadingLevel.HEADING_3 :
+                        level === 4 ? HeadingLevel.HEADING_4 :
+                            level === 5 ? HeadingLevel.HEADING_5 :
+                                HeadingLevel.HEADING_6
+        });
         return '||oldma-heading||';
     });
-    console.log(paragraphs, markdown);
 
-    // Handle external links
+    // Handle external links - now captures multiple links per line
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     markdown = markdown.replace(linkRegex, (match, text, url) => {
-        links.push(
-            {
-                children: [
-                    new ExternalHyperlink({
-                        children: [
-                            new TextRun({
-                                text: text,
-                                style: "Hyperlink"
-                            })
-                        ],
-                        link: url
-                    })
-                ]
-            }
-        );
+        links.push({
+            type: 'link',
+            text: text,
+            url: url
+        });
         return '||oldma-linkAddress||';
     });
 
-    // Previous Obsidian-specific conversions remain the same
-
-    // Handle remaining content with inline formatting
+    // Process remaining content
     const lines = markdown.split('\n');
     while (lines.length > 0) {
-        const line = lines.shift();
-        if (typeof line == typeof {}) {
-            paragraphs.push(new Paragraph(line));
-            continue;
-        }
+        const line = lines.shift().trim();
 
+        // Skip empty lines
+        if (!line) continue;
 
+        // Handle headings
         if (line.includes('||oldma-heading||')) {
-            paragraphs.push(new Paragraph(headings.shift()));
-            continue;
-        } else if (line.includes('||oldma-linkAddress||')) {
-            const lineParts = line.split('||oldma-linkAddress||');
-            const linkAddress = links.shift();
-            if (lineParts[0]) {
-                const arr1 = getCorrectTextStyling(lineParts[0])
-                arr1.reverse()
-                arr1.forEach(item => linkAddress.children.unshift(item));
-            }
-            if (lineParts[1]) {
-                getCorrectTextStyling(lineParts[1]).forEach(item => linkAddress.children.push(item));
-            }
-            paragraphs.push(new Paragraph(linkAddress));
+            const headingInfo = headings.shift();
+            paragraphs.push(
+                new Paragraph({
+                    heading: headingInfo.level,
+                    children: [
+                        new TextRun({
+                            text: headingInfo.text,
+                            size: headingInfo.level === HeadingLevel.HEADING_1 ? 32 :
+                                headingInfo.level === HeadingLevel.HEADING_2 ? 28 :
+                                    headingInfo.level === HeadingLevel.HEADING_3 ? 24 : 22
+                        })
+                    ]
+                })
+            );
             continue;
         }
-        if (line.trim()) {
-            // Handle basic inline formatting
-            const children = getCorrectTextStyling(line)
 
-            if (children.length > 0) {
-                paragraphs.push(new Paragraph({ children }));
+        // Handle links - modified to handle multiple links
+        const linkCount = (line.match(/\|\|oldma-linkAddress\|\|/g) || []).length;
+        if (line.includes('||oldma-linkAddress||')) {
+            const lineChildren = [];
+            let currentLine = line;
+
+            for (let i = 0; i < linkCount; i++) {
+                const linkInfo = links.shift();
+                const linkIndex = currentLine.indexOf('||oldma-linkAddress||');
+
+                // Add text before link
+                if (linkIndex > 0) {
+                    const beforeLinkText = currentLine.slice(0, linkIndex);
+                    lineChildren.push(...getCorrectTextStyling(beforeLinkText));
+                }
+
+                // Add link
+                lineChildren.push(
+                    new ExternalHyperlink({
+                        children: [
+                            new TextRun({
+                                text: linkInfo.text,
+                                style: "Hyperlink"
+                            })
+                        ],
+                        link: linkInfo.url
+                    })
+                );
+
+                // Prepare for next iteration or remaining text
+                currentLine = currentLine.slice(linkIndex + 21);
             }
+
+            // Add any remaining text after links
+            if (currentLine.trim()) {
+                lineChildren.push(...getCorrectTextStyling(currentLine));
+            }
+
+            paragraphs.push(new Paragraph({ children: lineChildren }));
+            continue;
         }
 
+        // Handle regular text with inline formatting
+        const children = getCorrectTextStyling(line);
+        if (children.length > 0) {
+            paragraphs.push(new Paragraph({ children }));
+        }
     }
-
-
 
     return paragraphs;
 }
