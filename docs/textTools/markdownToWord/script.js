@@ -1,4 +1,4 @@
-const { Document, Paragraph, TextRun, Packer, HeadingLevel, ExternalHyperlink } = window.docx;
+const { Document, Paragraph, TextRun, Packer, HeadingLevel, ExternalHyperlink, ImageRun } = window.docx;
 const fileInput = document.getElementById('mdFile');
 const preview = document.getElementById('preview');
 const convertBtn = document.getElementById('convertBtn');
@@ -42,6 +42,22 @@ function processObsidianMarkdownBefore(text) {
     );
 
     return text;
+}
+
+async function fetchImageAsBase64(url) {
+    try {
+        const response = await axios.get(url, { responseType: "arraybuffer" });
+        const base64 = btoa(
+            new Uint8Array(response.data).reduce(
+                (data, byte) => data + String.fromCharCode(byte),
+                ""
+            )
+        );
+        return `data:${response.headers["content-type"]};base64,${base64}`;
+    } catch (error) {
+        console.warn(`CORS issue or fetch error for URL: ${url}`, error);
+        return null; // Return null to indicate failure
+    }
 }
 
 // Process Obsidian-specific markdown features
@@ -118,16 +134,23 @@ function getCorrectTextStyling(text) {
 }
 
 // Convert markdown to DOCX paragraphs
-function markdownToDocxParagraphs(markdown) {
+async function markdownToDocxParagraphs(markdown) {
     const paragraphs = [];
     const headings = [];
     const links = [];
     const bulletPoints = [];
+    const images = [];
+
+    // Handle images first (separately from bullet points)
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    markdown = markdown.replace(imageRegex, (match, altText, imageUrl) => {
+        images.push({ altText, url: imageUrl });
+        return '||image-placeholder||';
+    });
 
     // Handle bullet points first - with nested markdown parsing
     const bulletPointRegex = /^(\s*-\s+)(.+)$/gm;
     markdown = markdown.replace(bulletPointRegex, (match, bulletPrefix, text) => {
-        // Temporarily parse links within the bullet point text
         const tempLinks = [];
         const nestedLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
         const processedText = text.replace(nestedLinkRegex, (linkMatch, linkText, linkUrl) => {
@@ -187,6 +210,47 @@ function markdownToDocxParagraphs(markdown) {
             continue;
         }
 
+        // Handle images
+        if (line.includes('||image-placeholder||')) {
+            const imageInfo = images.shift();
+            const base64Image = await fetchImageAsBase64(imageInfo.url);
+
+            if (base64Image) {
+                console.log(`Successfully fetched image: ${imageInfo.url}`);
+                // Successfully fetched image, insert it
+                paragraphs.push(
+                    new Paragraph({
+                        children: [
+                            new ImageRun({
+                                data: base64Image,
+                                transformation: { width: 300, height: 200 },
+                            }),
+                        ],
+                    })
+                );
+            } else {
+                console.log(`Failed to fetch image: ${imageInfo.url}`);
+                // Failed to fetch image, insert a hyperlink instead
+                paragraphs.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun(`Image could not be embedded. Access it here: `),
+                            new ExternalHyperlink({
+                                children: [
+                                    new TextRun({
+                                        text: `[${imageInfo.altText || "Image"}]`,
+                                        style: "Hyperlink",
+                                    }),
+                                ],
+                                link: imageInfo.url,
+                            }),
+                        ],
+                    })
+                );
+            }
+            continue;
+        }
+
         // Handle bullet points
         if (line.includes('||oldma-bulletpoint||')) {
             const bulletInfo = bulletPoints.shift();
@@ -205,7 +269,6 @@ function markdownToDocxParagraphs(markdown) {
                     bulletChildren.push(...getCorrectTextStyling(beforeLinkText));
                 }
 
-                // Add link
                 const linkInfo = bulletInfo.links.shift();
                 bulletChildren.push(
                     new ExternalHyperlink({
@@ -219,11 +282,9 @@ function markdownToDocxParagraphs(markdown) {
                     })
                 );
 
-                // Prepare for next iteration
                 currentText = currentText.slice(linkIndex + 28);
             }
 
-            // Add any remaining text
             if (currentText.trim()) {
                 bulletChildren.push(...getCorrectTextStyling(currentText));
             }
@@ -266,30 +327,26 @@ function markdownToDocxParagraphs(markdown) {
                 const linkInfo = links.shift();
                 const linkIndex = currentLine.indexOf('||oldma-linkAddress||');
 
-                // Add text before link
                 if (linkIndex > 0) {
                     const beforeLinkText = currentLine.slice(0, linkIndex);
                     lineChildren.push(...getCorrectTextStyling(beforeLinkText));
                 }
 
-                // Add link
                 lineChildren.push(
                     new ExternalHyperlink({
                         children: [
                             new TextRun({
                                 text: linkInfo.text,
-                                style: "Hyperlink"
+                                style: "Hyperlink",
                             })
                         ],
                         link: linkInfo.url
                     })
                 );
 
-                // Prepare for next iteration or remaining text
                 currentLine = currentLine.slice(linkIndex + 21);
             }
 
-            // Add any remaining text after links
             if (currentLine.trim()) {
                 lineChildren.push(...getCorrectTextStyling(currentLine));
             }
@@ -309,7 +366,8 @@ function markdownToDocxParagraphs(markdown) {
 }
 
 convertBtn.addEventListener('click', async () => {
-    const paragraphs = markdownToDocxParagraphs(markdownContent);
+    const paragraphs = await markdownToDocxParagraphs(markdownContent);
+    console.log("ready to assemble");
 
     const doc = new Document({
         sections: [{
@@ -317,9 +375,12 @@ convertBtn.addEventListener('click', async () => {
             children: paragraphs
         }]
     });
+    console.log("assembled");
 
     // Generate the document
     const blob = await Packer.toBlob(doc);
+
+    console.log("generated");
 
     // Create download link
     const url = window.URL.createObjectURL(blob);
@@ -330,4 +391,6 @@ convertBtn.addEventListener('click', async () => {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+
+    console.log("downloaded");
 });
