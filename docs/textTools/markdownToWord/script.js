@@ -232,20 +232,21 @@ async function markdownToDocxParagraphs(markdown) {
                 console.log(`Failed to fetch image: ${imageInfo.url}`);
                 // Failed to fetch image, insert a hyperlink instead
                 paragraphs.push(
-                    new Paragraph({
-                        children: [
-                            new TextRun(`Image could not be embedded. Access it here: `),
-                            new ExternalHyperlink({
-                                children: [
-                                    new TextRun({
-                                        text: `[${imageInfo.altText || "Image"}]`,
-                                        style: "Hyperlink",
-                                    }),
-                                ],
-                                link: imageInfo.url,
-                            }),
-                        ],
-                    })
+                    new Paragraph(
+                        {
+                            children: [
+                                new ExternalHyperlink({
+                                    children: [
+                                        new TextRun({
+                                            text: imageInfo.altText,
+                                            style: "Hyperlink",
+                                        })
+                                    ],
+                                    link: imageInfo.url
+                                })
+                            ]
+                        }
+                    )
                 );
             }
             continue;
@@ -366,6 +367,7 @@ async function markdownToDocxParagraphs(markdown) {
 }
 
 convertBtn.addEventListener('click', async () => {
+    const start = Date.now();
     const paragraphs = await markdownToDocxParagraphs(markdownContent);
     console.log("ready to assemble");
 
@@ -378,6 +380,7 @@ convertBtn.addEventListener('click', async () => {
     console.log("assembled");
 
     // Generate the document
+    const middle = Date.now();
     const blob = await Packer.toBlob(doc);
 
     console.log("generated");
@@ -393,4 +396,7 @@ convertBtn.addEventListener('click', async () => {
     document.body.removeChild(a);
 
     console.log("downloaded");
+    console.log("Time taken to convert: " + (middle - start) + "ms");
+    console.log("Time taken to generate: " + (Date.now() - middle) + "ms");
+    console.log("Total time taken: " + (Date.now() - start) + "ms");
 });
