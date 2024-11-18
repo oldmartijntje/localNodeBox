@@ -122,8 +122,33 @@ function markdownToDocxParagraphs(markdown) {
     const paragraphs = [];
     const headings = [];
     const links = [];
+    const bulletPoints = [];
 
-    // Handle headers first
+    // Handle bullet points first - with nested markdown parsing
+    const bulletPointRegex = /^(\s*-\s+)(.+)$/gm;
+    markdown = markdown.replace(bulletPointRegex, (match, bulletPrefix, text) => {
+        // Temporarily parse links within the bullet point text
+        const tempLinks = [];
+        const nestedLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+        const processedText = text.replace(nestedLinkRegex, (linkMatch, linkText, linkUrl) => {
+            tempLinks.push({
+                type: 'link',
+                text: linkText,
+                url: linkUrl
+            });
+            return '||oldma-nested-linkAddress||';
+        });
+
+        bulletPoints.push({
+            type: 'bullet',
+            text: processedText,
+            links: tempLinks,
+            indent: bulletPrefix.length - 3 // Calculate indentation level
+        });
+        return '||oldma-bulletpoint||';
+    });
+
+    // Handle headers 
     const headerRegex = /^(#{1,6})\s+(.+)$/gm;
     markdown = markdown.replace(headerRegex, (match, hashes, text) => {
         const level = hashes.length;
@@ -140,7 +165,7 @@ function markdownToDocxParagraphs(markdown) {
         return '||oldma-heading||';
     });
 
-    // Handle external links - now captures multiple links per line
+    // Handle external links
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     markdown = markdown.replace(linkRegex, (match, text, url) => {
         links.push({
@@ -154,10 +179,63 @@ function markdownToDocxParagraphs(markdown) {
     // Process remaining content
     const lines = markdown.split('\n');
     while (lines.length > 0) {
-        const line = lines.shift().trim();
+        const line = lines.shift();
 
-        // Skip empty lines
-        if (!line) continue;
+        // Preserve empty lines
+        if (line.trim() === '') {
+            paragraphs.push(new Paragraph({}));
+            continue;
+        }
+
+        // Handle bullet points
+        if (line.includes('||oldma-bulletpoint||')) {
+            const bulletInfo = bulletPoints.shift();
+            const bulletChildren = [];
+
+            // Handle text before first link
+            let currentText = bulletInfo.text;
+
+            // Process nested links
+            while (currentText.includes('||oldma-nested-linkAddress||')) {
+                const linkIndex = currentText.indexOf('||oldma-nested-linkAddress||');
+
+                // Add text before link
+                if (linkIndex > 0) {
+                    const beforeLinkText = currentText.slice(0, linkIndex);
+                    bulletChildren.push(...getCorrectTextStyling(beforeLinkText));
+                }
+
+                // Add link
+                const linkInfo = bulletInfo.links.shift();
+                bulletChildren.push(
+                    new ExternalHyperlink({
+                        children: [
+                            new TextRun({
+                                text: linkInfo.text,
+                                style: "Hyperlink"
+                            })
+                        ],
+                        link: linkInfo.url
+                    })
+                );
+
+                // Prepare for next iteration
+                currentText = currentText.slice(linkIndex + 28);
+            }
+
+            // Add any remaining text
+            if (currentText.trim()) {
+                bulletChildren.push(...getCorrectTextStyling(currentText));
+            }
+
+            paragraphs.push(
+                new Paragraph({
+                    bullet: { level: 0 }, // You can adjust level based on bulletInfo.indent if needed
+                    children: bulletChildren
+                })
+            );
+            continue;
+        }
 
         // Handle headings
         if (line.includes('||oldma-heading||')) {
@@ -178,7 +256,7 @@ function markdownToDocxParagraphs(markdown) {
             continue;
         }
 
-        // Handle links - modified to handle multiple links
+        // Handle links
         const linkCount = (line.match(/\|\|oldma-linkAddress\|\|/g) || []).length;
         if (line.includes('||oldma-linkAddress||')) {
             const lineChildren = [];
