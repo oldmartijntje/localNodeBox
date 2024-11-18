@@ -2,7 +2,18 @@ const { Document, Paragraph, TextRun, Packer, HeadingLevel, ExternalHyperlink, I
 const fileInput = document.getElementById('mdFile');
 const preview = document.getElementById('preview');
 const convertBtn = document.getElementById('convertBtn');
+const overlay = document.getElementById('overlay');
+const estimationText = document.getElementById('estimationText');
+const estimatedTime = document.getElementById('estimatedTime');
+const proccessDisplay = document.getElementById('proccess');
+const compressImagesCheckbox = document.getElementById('compressImagesCheckbox');
+
 let markdownContent = '';
+var converting = false;
+var startTime = null;
+var renderTime = null;
+var compressImages = false;
+
 
 // Custom renderer for Obsidian-specific features
 const renderer = new marked.Renderer();
@@ -31,6 +42,47 @@ renderer.listitem = function (text) {
     }
     return `<li>${text}</li>`;
 };
+
+compressImagesCheckbox.addEventListener('change', function () {
+    if (converting) return;
+    const isCompressed = this.checked;
+    compressImages = isCompressed;
+});
+
+function getTimeEstimationOffset() {
+    if (compressImages) {
+        return 5;
+    }
+    return 10;
+}
+
+function calculateTimeEstimation() {
+    if (renderTime && startTime) {
+        const timeTaken = renderTime - startTime;
+        const timeEstimation = timeTaken * getTimeEstimationOffset();
+        return new Date(timeEstimation + renderTime).toISOString();
+    }
+    return null;
+}
+
+function updateOverlay(process) {
+    try {
+        if (!process) {
+            proccess = 'unknown';
+        }
+        const showTimeEstimation = renderTime && startTime;
+        proccessDisplay.innerText = process;
+        if (showTimeEstimation) {
+            estimationText.style.display = 'block';
+            estimatedTime.setAttribute('data-value', calculateTimeEstimation());
+        } else {
+            estimationText.style.display = 'none';
+            estimatedTime.innerHTML = 'Calculating...'
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 // Process Obsidian-specific markdown features
 function processObsidianMarkdownBefore(text) {
@@ -93,6 +145,12 @@ function processObsidianMarkdownAfter(text) {
 fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    // only accept .md and .txt
+    if (!file.name.endsWith('.md') && !file.name.endsWith('.txt')) {
+        alert('Please select a markdown (.md) or text (.txt) file');
+        e.target.files = null;
+        return;
+    }
 
     markdownContent = await file.text();
 
@@ -141,6 +199,7 @@ async function markdownToDocxParagraphs(markdown) {
     const bulletPoints = [];
     const images = [];
 
+    updateOverlay('Locating images');
     // Handle images first (separately from bullet points)
     const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
     markdown = markdown.replace(imageRegex, (match, altText, imageUrl) => {
@@ -148,6 +207,7 @@ async function markdownToDocxParagraphs(markdown) {
         return '||image-placeholder||';
     });
 
+    updateOverlay('Locating bulletpoints');
     // Handle bullet points first - with nested markdown parsing
     const bulletPointRegex = /^(\s*-\s+)(.+)$/gm;
     markdown = markdown.replace(bulletPointRegex, (match, bulletPrefix, text) => {
@@ -171,6 +231,7 @@ async function markdownToDocxParagraphs(markdown) {
         return '||oldma-bulletpoint||';
     });
 
+    updateOverlay('Locating headers');
     // Handle headers 
     const headerRegex = /^(#{1,6})\s+(.+)$/gm;
     markdown = markdown.replace(headerRegex, (match, hashes, text) => {
@@ -188,6 +249,7 @@ async function markdownToDocxParagraphs(markdown) {
         return '||oldma-heading||';
     });
 
+    updateOverlay('Locating links');
     // Handle external links
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     markdown = markdown.replace(linkRegex, (match, text, url) => {
@@ -199,9 +261,11 @@ async function markdownToDocxParagraphs(markdown) {
         return '||oldma-linkAddress||';
     });
 
+    updateOverlay('Rendering content');
     // Process remaining content
     const lines = markdown.split('\n');
     while (lines.length > 0) {
+        updateOverlay('Rendering content');
         const line = lines.shift();
 
         // Preserve empty lines
@@ -212,6 +276,7 @@ async function markdownToDocxParagraphs(markdown) {
 
         // Handle images
         if (line.includes('||image-placeholder||')) {
+            updateOverlay('Rendering Image');
             const imageInfo = images.shift();
             const base64Image = await fetchImageAsBase64(imageInfo.url);
 
@@ -252,8 +317,10 @@ async function markdownToDocxParagraphs(markdown) {
             continue;
         }
 
+
         // Handle bullet points
         if (line.includes('||oldma-bulletpoint||')) {
+            updateOverlay('Rendering Bulletpoint');
             const bulletInfo = bulletPoints.shift();
             const bulletChildren = [];
 
@@ -301,6 +368,7 @@ async function markdownToDocxParagraphs(markdown) {
 
         // Handle headings
         if (line.includes('||oldma-heading||')) {
+            updateOverlay('Rendering Heading');
             const headingInfo = headings.shift();
             paragraphs.push(
                 new Paragraph({
@@ -321,6 +389,7 @@ async function markdownToDocxParagraphs(markdown) {
         // Handle links
         const linkCount = (line.match(/\|\|oldma-linkAddress\|\|/g) || []).length;
         if (line.includes('||oldma-linkAddress||')) {
+            updateOverlay('Rendering Link');
             const lineChildren = [];
             let currentLine = line;
 
@@ -367,9 +436,15 @@ async function markdownToDocxParagraphs(markdown) {
 }
 
 convertBtn.addEventListener('click', async () => {
-    const start = Date.now();
+    convertBtn.disabled = true;
+    if (converting) return;
+
+    converting = true;
+    overlay.style.display = 'block';
+    startTime = Date.now();
+    renderTime = null;
+    updateOverlay('Initiation');
     const paragraphs = await markdownToDocxParagraphs(markdownContent);
-    console.log("ready to assemble");
 
     const doc = new Document({
         sections: [{
@@ -377,13 +452,12 @@ convertBtn.addEventListener('click', async () => {
             children: paragraphs
         }]
     });
-    console.log("assembled");
 
     // Generate the document
-    const middle = Date.now();
+    renderTime = Date.now();
+    updateOverlay('Creating document');
     const blob = await Packer.toBlob(doc);
-
-    console.log("generated");
+    updateOverlay('Readying download');
 
     // Create download link
     const url = window.URL.createObjectURL(blob);
@@ -395,8 +469,11 @@ convertBtn.addEventListener('click', async () => {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 
-    console.log("downloaded");
-    console.log("Time taken to convert: " + (middle - start) + "ms");
-    console.log("Time taken to generate: " + (Date.now() - middle) + "ms");
-    console.log("Total time taken: " + (Date.now() - start) + "ms");
+    console.log("Time taken to convert: " + (renderTime - startTime) + "ms");
+    console.log("Time taken to generate: " + (Date.now() - renderTime) + "ms");
+    console.log("Total time taken: " + (Date.now() - startTime) + "ms");
+    estimatedTime.removeAttribute('data-value');
+    converting = false;
+    convertBtn.disabled = false;
+    overlay.style.display = 'none';
 });
