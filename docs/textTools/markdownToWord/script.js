@@ -6,7 +6,7 @@ const overlay = document.getElementById('overlay');
 const estimationText = document.getElementById('estimationText');
 const estimatedTime = document.getElementById('estimatedTime');
 const proccessDisplay = document.getElementById('proccess');
-// const compressImagesCheckbox = document.getElementById('compressImagesCheckbox');
+const compressImagesCheckbox = document.getElementById('compressImagesCheckbox');
 
 let markdownContent = '';
 var converting = false;
@@ -43,11 +43,11 @@ renderer.listitem = function (text) {
     return `<li>${text}</li>`;
 };
 
-// compressImagesCheckbox.addEventListener('change', function () {
-//     if (converting) return;
-//     const isCompressed = this.checked;
-//     compressImages = isCompressed;
-// });
+compressImagesCheckbox.addEventListener('change', function () {
+    if (converting) return;
+    const isCompressed = this.checked;
+    compressImages = isCompressed;
+});
 
 function getTimeEstimationOffset() {
     if (compressImages) {
