@@ -26,3 +26,14 @@ footer {
     resize: both;
     /* Can be 'both', 'horizontal', 'vertical', or 'none' */
 }
+
+.localTool,
+.localTool:active,
+.localTool:focus {
+    cursor: not-allowed;
+    background-color: #cccccc;
+}
+
+.localTool:hover {
+    background-color: #a5a5a5;
+}
