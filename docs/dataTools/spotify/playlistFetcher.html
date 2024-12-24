@@ -147,39 +147,62 @@
                 return;
             }
 
+            const limit = 100; // Max items per request
+            let offset = 0;
+            let allTracks = [];
+            let hasMoreTracks = true;
+
             try {
-                const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                while (hasMoreTracks) {
+                    const response = await fetch(
+                        `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=${limit}&offset=${offset}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        }
+                    );
+
+                    if (response.status === 401) {
+                        // Token expired or invalid
+                        localStorage.removeItem('localNodeBox.spotifyAccessToken');
+                        document.getElementById('loginModal').style.display = 'block';
+                        return;
                     }
-                });
 
-                if (response.status === 401) {
-                    // Token expired or invalid
-                    localStorage.removeItem('localNodeBox.spotifyAccessToken');
-                    document.getElementById('loginModal').style.display = 'block';
-                    return;
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    // Append tracks to the main array
+                    allTracks = allTracks.concat(
+                        data.items.map(item => ({
+                            displayText: item.track.name,
+                            url: item.track.external_urls.spotify
+                        }))
+                    );
+
+                    // Check if there are more tracks to fetch
+                    offset += limit;
+                    hasMoreTracks = data.items.length === limit;
+
+                    // Log progress
+                    console.log(`Fetched ${allTracks.length} tracks so far...`);
+
+                    // Wait for 1 second before the next request
+                    if (hasMoreTracks) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
                 }
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log(data)
-
-                // Transform the data into the requested format
-                const formattedTracks = data.items.map(item => ({
-                    displayText: item.track.name,
-                    url: item.track.external_urls.spotify
-                }));
 
                 // Display the result
-                resultDiv.textContent = JSON.stringify(formattedTracks, null, 2);
+                resultDiv.textContent = JSON.stringify(allTracks, null, 2);
                 resultDiv.style.display = 'block';
 
                 // Create download button
-                const blob = new Blob([JSON.stringify(formattedTracks, null, 2)], { type: 'application/json' });
+                const blob = new Blob([JSON.stringify(allTracks, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
