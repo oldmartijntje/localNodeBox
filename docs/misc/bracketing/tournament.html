@@ -163,15 +163,25 @@
                     const text = await file.text();
                     const data = JSON.parse(text);
 
+                    // Check if this is a save state
+                    if (data.saveFile && data.normalData) {
+                        loadSaveState(data);
+                        document.getElementById('setupModal').style.display = 'none';
+                        document.getElementById('tournamentView').style.display = 'block';
+                        validationDiv.innerHTML = `<div class="alert alert-success">Successfully loaded save state</div>`;
+                        return;
+                    }
+
+                    // Otherwise treat as normal tournament data
                     if (!Array.isArray(data)) {
-                        throw new Error('File must contain an array');
+                        throw new Error('File must contain an array or be a valid save state');
                     }
 
                     if (data.length < 2) {
                         throw new Error('Must have at least 2 items');
                     }
 
-                    // Check first and last items
+                    // Check items
                     const checkItem = (item) => {
                         if (!item.displayText || typeof item.displayText !== 'string') {
                             throw new Error('Items must have displayText field');
@@ -193,6 +203,14 @@
                 }
             }
         });
+
+        // Add save button to controls
+        const controlsDiv = document.querySelector('#controls .card-body');
+        const saveButton = document.createElement('button');
+        saveButton.className = 'btn btn-info';
+        saveButton.textContent = 'Save Progress';
+        saveButton.onclick = exportSaveState;
+        controlsDiv.insertBefore(saveButton, controlsDiv.firstChild);
 
         // Setup form handling
         document.getElementById('startTournament').addEventListener('click', () => {
@@ -481,6 +499,88 @@
 
         function resetBracket() {
             initializeBracket();
+        }
+
+        function exportSaveState() {
+            const saveState = {
+                saveFile: {
+                    OPTIONS_PER_GROUP,
+                    WINNERS_PER_GROUP,
+                    TOTAL_WINNERS,
+                    currentRound,
+                    rounds: rounds.map((round, roundIndex) => ({
+                        matches: round.map(match => ({
+                            id: match.id,
+                            options: match.options.map(option => ({
+                                ...option,
+                                selected: roundIndex < currentRound
+                                    ? historicalWinners.get(match.id)?.has(option) || false
+                                    : selectedOptions.get(match.id)?.has(option) || false
+                            }))
+                        }))
+                    }))
+                },
+                normalData: bracketData
+            };
+
+            // Create and trigger download
+            const blob = new Blob([JSON.stringify(saveState, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tournament-save.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadSaveState(saveState) {
+            // Validate save state structure
+            if (!saveState.saveFile || !saveState.normalData || !Array.isArray(saveState.saveFile.rounds)) {
+                throw new Error('Invalid save state format');
+            }
+
+            // Load settings
+            OPTIONS_PER_GROUP = saveState.saveFile.OPTIONS_PER_GROUP;
+            WINNERS_PER_GROUP = saveState.saveFile.WINNERS_PER_GROUP;
+            TOTAL_WINNERS = saveState.saveFile.TOTAL_WINNERS;
+            currentRound = saveState.saveFile.currentRound;
+            bracketData = saveState.normalData;
+
+            // Reconstruct rounds
+            rounds = saveState.saveFile.rounds.map(round =>
+                round.matches.map(match => ({
+                    id: match.id,
+                    options: match.options.map(({ selected, ...option }) => option)
+                }))
+            );
+
+            // Reconstruct selections
+            selectedOptions.clear();
+            historicalWinners.clear();
+
+            saveState.saveFile.rounds.forEach((round, roundIndex) => {
+                round.matches.forEach(match => {
+                    const selectedOpts = match.options.filter(opt => opt.selected);
+                    if (selectedOpts.length > 0) {
+                        if (roundIndex < currentRound) {
+                            historicalWinners.set(match.id, new Set(selectedOpts.map(({ selected, ...opt }) => opt)));
+                        } else {
+                            selectedOptions.set(match.id, new Set(selectedOpts.map(({ selected, ...opt }) => opt)));
+                        }
+                    }
+                });
+            });
+
+            // Update UI
+            document.getElementById('optionsPerGroup').value = OPTIONS_PER_GROUP;
+            document.getElementById('winnersPerGroup').value = WINNERS_PER_GROUP;
+            document.getElementById('totalWinners').value = TOTAL_WINNERS;
+
+            renderBracket();
+            updateSelectionsNeeded();
+            updateConfirmButton();
         }
 
         // Include the rest of your existing functions here...
