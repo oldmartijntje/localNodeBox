@@ -186,7 +186,9 @@
                 <button onclick="resetBracket()" class="btn btn-secondary">Reset Bracket</button>
                 <button onclick="confirmSelections()" id="confirmButton" class="btn btn-primary" disabled>Confirm
                     Selections</button>
-                <div>Select <span id="selectionsNeeded">0</span> options from each group</div>
+                <div>Your top <span id="totalWinnersText">0</span>. Select <span id="selectionsNeeded">0</span> options
+                    from
+                    each group</div>
             </div>
         </div>
         <div id="bracketContainer" class="d-flex gap-4 overflow-auto"></div>
@@ -286,7 +288,7 @@
 
                 const roundTitle = document.createElement('div');
                 roundTitle.className = 'card-header bg-primary text-white';
-                roundTitle.textContent = `Round ${roundIndex + 1}`;
+                roundTitle.textContent = `Round ${roundIndex + 1} - ${matches.length} Groups`;
                 roundDiv.appendChild(roundTitle);
 
                 const roundContent = document.createElement('div');
@@ -542,6 +544,8 @@
         function updateSelectionsNeeded() {
             const selectionsNeededElement = document.getElementById('selectionsNeeded');
             selectionsNeededElement.textContent = WINNERS_PER_GROUP;
+            const totalWinnersElement = document.getElementById('totalWinnersText');
+            totalWinnersElement.textContent = TOTAL_WINNERS;
         }
 
         function resetBracket() {
