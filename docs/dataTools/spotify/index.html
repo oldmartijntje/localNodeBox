@@ -17,6 +17,7 @@
                 <input type="text" id="clientIdInput" class="form-control" placeholder="Enter your Spotify Client ID">
             </div>
             <button id="loginButton" class="btn btn-primary">Log in with Spotify</button>
+            <button id="helpButton" class="btn btn-info mt-3">Need Help?</button>
         </div>
 
         <div id="logged-in" class="text-center d-none">
@@ -26,8 +27,40 @@
             <div class="mt-4">
                 <a href="https://oldmartijntje.github.io/localNodeBox/dataTools/spotify/playlistFetcher.html"
                     class="btn btn-primary">Go to Playlist Fetcher</a>
+            </div>
+        </div>
+    </div>
 
-                <!-- <a href="https://oldmartijntje.github.io/localNodeBox/dataTools/spotify/logout.html" class="btn btn-danger">Log out</a> -->
+    <!-- Help Popup Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">How to Set Up Your Spotify API</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Using your own Spotify API ensures your safety and privacy. I do not have access to your data,
+                        and Spotify requires your explicit approval. Here are the steps to set up your API:</p>
+                    <ol>
+                        <li>Login at the <a href="https://developer.spotify.com/dashboard" target="_blank">Spotify
+                                Developer Dashboard</a>.</li>
+                        <li>Click on "Create App".</li>
+                        <li>Set the "Redirect URIs" field to
+                            <code>https://oldmartijntje.github.io/localNodeBox/dataTools/spotify</code> to redirect back
+                            to this website.</li>
+                        <li>Select the "Web API" checkbox.</li>
+                        <li>Fill in the other required fields as you see fit.</li>
+                        <li>Click the "Save" button.</li>
+                        <li>Go to the "Settings" tab.</li>
+                        <li>Copy your "Client ID" under the "Basic Information" section.</li>
+                    </ol>
+                    <p>Now you can use your Spotify API on this website by entering your "Client ID" in the login page.
+                        You'll be redirected to Spotify's login page to authenticate.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -89,6 +122,11 @@
 
             const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
             window.location.href = authUrl;
+        });
+
+        document.getElementById('helpButton').addEventListener('click', () => {
+            const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+            helpModal.show();
         });
 
         checkSpotifyLogin();
