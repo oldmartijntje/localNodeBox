@@ -39,8 +39,13 @@
             font-weight: bold;
         }
 
-        button:hover {
+        button:hover:enabled {
             background: #1ed760;
+        }
+
+        button:disabled {
+            background: #bbb;
+            cursor: not-allowed;
         }
 
         #result {
@@ -56,6 +61,14 @@
             color: #dc3545;
             margin-top: 0.5rem;
             display: none;
+        }
+
+        .loading {
+            text-align: center;
+            display: none;
+            margin: 1rem 0;
+            color: #1DB954;
+            font-weight: bold;
         }
 
         .modal {
@@ -102,8 +115,9 @@
         <p>Enter a playlist URL to get song data in JSON format.</p>
 
         <input type="text" id="playlistUrl" placeholder="Enter Spotify playlist URL" />
-        <button onclick="fetchPlaylist()">Fetch Playlist Data</button>
+        <button id="fetchButton" onclick="fetchPlaylist()">Fetch Playlist Data</button>
 
+        <div class="loading" id="loadingIndicator">Fetching playlist data...</div>
         <div id="error" class="error"></div>
         <pre id="result"></pre>
     </div>
@@ -127,15 +141,17 @@
 
         async function fetchPlaylist() {
             const token = localStorage.getItem('localNodeBox.spotifyAccessToken');
+            const fetchButton = document.getElementById('fetchButton');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+
             if (!token) {
                 document.getElementById('loginModal').style.display = 'block';
                 return;
             }
 
             const playlistUrl = document.getElementById('playlistUrl').value;
-            const resultDiv = document.getElementById('result');
-            const errorDiv = document.getElementById('error');
-
             resultDiv.style.display = 'none';
             errorDiv.style.display = 'none';
 
@@ -146,6 +162,10 @@
                 errorDiv.style.display = 'block';
                 return;
             }
+
+            // Show loading indicator and disable button
+            loadingIndicator.style.display = 'block';
+            fetchButton.disabled = true;
 
             const limit = 100; // Max items per request
             let offset = 0;
@@ -215,6 +235,10 @@
             } catch (error) {
                 errorDiv.textContent = `Error: ${error.message}`;
                 errorDiv.style.display = 'block';
+            } finally {
+                // Hide loading indicator and enable button
+                loadingIndicator.style.display = 'none';
+                fetchButton.disabled = false;
             }
         }
     </script>
