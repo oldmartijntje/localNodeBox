@@ -12,51 +12,76 @@
     <div class="container mt-5">
         <div id="not-logged-in" class="text-center d-none">
             <h1 class="mb-4">Spotify Login Checker</h1>
-            <p>You are not logged in. Please enter your Spotify API token below:</p>
+            <p>You are not logged in. Please provide your Spotify Client ID and click the button below to log in:</p>
             <div class="mb-3">
-                <input type="text" id="spotifyToken" class="form-control" placeholder="Enter your Spotify API Token">
+                <input type="text" id="clientIdInput" class="form-control" placeholder="Enter your Spotify Client ID">
             </div>
-            <button id="submitToken" class="btn btn-primary">Submit</button>
+            <button id="loginButton" class="btn btn-primary">Log in with Spotify</button>
         </div>
 
         <div id="logged-in" class="text-center d-none">
             <h1 class="text-success">You are logged in!</h1>
+            <p>Welcome to Spotify Login Checker!</p>
         </div>
     </div>
 
     <script>
-        async function checkSpotifyLogin() {
-            const token = localStorage.getItem('spotifyToken');
-            if (token) {
-                try {
-                    const response = await fetch('https://api.spotify.com/v1/me', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
+        const REDIRECT_URI = window.location.origin; // Replace with your redirect URI
+        const SCOPES = 'user-read-private user-read-email';
 
-                    if (response.ok) {
-                        document.getElementById('logged-in').classList.remove('d-none');
-                    } else {
-                        throw new Error('Invalid token');
-                    }
-                } catch (error) {
-                    console.error('Login check failed:', error);
-                    document.getElementById('not-logged-in').classList.remove('d-none');
-                }
+        async function checkSpotifyLogin() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
+
+            if (accessToken) {
+                localStorage.setItem('spotifyAccessToken', accessToken);
+                window.history.pushState('', document.title, window.location.pathname);
+                showLoggedInState();
             } else {
-                document.getElementById('not-logged-in').classList.remove('d-none');
+                const token = localStorage.getItem('spotifyAccessToken');
+
+                if (token) {
+                    try {
+                        const response = await fetch('https://api.spotify.com/v1/me', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            showLoggedInState();
+                        } else {
+                            throw new Error('Token validation failed');
+                        }
+                    } catch (error) {
+                        console.error('Login check failed:', error);
+                        showNotLoggedInState();
+                    }
+                } else {
+                    showNotLoggedInState();
+                }
             }
         }
 
-        document.getElementById('submitToken').addEventListener('click', () => {
-            const token = document.getElementById('spotifyToken').value;
-            if (token) {
-                localStorage.setItem('spotifyToken', token);
-                location.reload();
-            } else {
-                alert('Please enter a token.');
+        function showNotLoggedInState() {
+            document.getElementById('not-logged-in').classList.remove('d-none');
+        }
+
+        function showLoggedInState() {
+            document.getElementById('logged-in').classList.remove('d-none');
+        }
+
+        document.getElementById('loginButton').addEventListener('click', () => {
+            const clientId = document.getElementById('clientIdInput').value;
+
+            if (!clientId) {
+                alert('Please enter your Spotify Client ID.');
+                return;
             }
+
+            const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
+            window.location.href = authUrl;
         });
 
         checkSpotifyLogin();
