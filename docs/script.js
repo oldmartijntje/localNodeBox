@@ -50,6 +50,13 @@ const toolsData = {
                     toolId: "2",
                     isLocal: false,
                     inDevelopment: false
+                },
+                {
+                    href: "./misc/bracketing/tournament.html",
+                    text: "Bracketing",
+                    toolId: "6",
+                    isLocal: false,
+                    inDevelopment: false
                 }
             ]
         },
@@ -84,6 +91,19 @@ const toolsData = {
                     toolId: "5",
                     isLocal: false,
                     inDevelopment: true
+                }
+            ]
+        },
+        {
+            id: "dataTools",
+            title: "Tools for gathering data etc.",
+            tools: [
+                {
+                    href: "./dataTools/spotify",
+                    text: "Spotify Data",
+                    toolId: "7",
+                    isLocal: false,
+                    inDevelopment: false
                 }
             ]
         }
