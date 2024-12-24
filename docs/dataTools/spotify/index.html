@@ -26,7 +26,7 @@
     </div>
 
     <script>
-        const REDIRECT_URI = window.location.origin; // Replace with your redirect URI
+        const REDIRECT_URI = 'https://oldmartijntje.github.io/localNodeBox/dataTools/spotify'; // Replace with your redirect URI
         const SCOPES = 'user-read-private user-read-email';
 
         async function checkSpotifyLogin() {
@@ -35,11 +35,11 @@
             const accessToken = params.get('access_token');
 
             if (accessToken) {
-                localStorage.setItem('spotifyAccessToken', accessToken);
+                localStorage.setItem('localNodeBox.spotifyAccessToken', accessToken);
                 window.history.pushState('', document.title, window.location.pathname);
                 showLoggedInState();
             } else {
-                const token = localStorage.getItem('spotifyAccessToken');
+                const token = localStorage.getItem('localNodeBox.spotifyAccessToken');
 
                 if (token) {
                     try {
