@@ -141,7 +141,6 @@
 
             // Extract playlist ID from URL
             const playlistId = playlistUrl.match(/playlist\/([a-zA-Z0-9]+)/)?.[1];
-
             if (!playlistId) {
                 errorDiv.textContent = 'Invalid playlist URL format';
                 errorDiv.style.display = 'block';
@@ -149,7 +148,7 @@
             }
 
             try {
-                const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+                const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
