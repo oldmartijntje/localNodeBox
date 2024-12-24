@@ -100,10 +100,19 @@ const toolsData = {
             tools: [
                 {
                     href: "./dataTools/spotify",
-                    text: "Spotify Data",
+                    text: "Spotify Login",
                     toolId: "7",
                     isLocal: false,
-                    inDevelopment: false
+                    inDevelopment: false,
+                    onlineOnly: true
+                },
+                {
+                    href: "./dataTools/spotify/playlistFetcher.html",
+                    text: "Spotify Playlist",
+                    toolId: "8",
+                    isLocal: false,
+                    inDevelopment: false,
+                    onlineOnly: true
                 }
             ]
         }
