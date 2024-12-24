@@ -4,7 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Playlist Fetcher</title>
+    <title>Playlist.Spotify - OldMartijntje's Toolkit📦</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="https://i.imgur.com/1noWzDB.png" type="image/x-icon">
+    <meta name="description"
+        content="Here you can fetch song data from a Spotify playlist in JSON format. You can use this date on other tools, or download it for your own use.">
+    <meta name="keywords"
+        content="OldMartijntje, Toolkit, Tools, Toys, Developers, Web Development, Software Development, Spotify, Spotify API">
+    <meta name="author" content="OldMartijntje">
+    <meta property="og:image" content="https://i.imgur.com/NeU2I13.png">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -110,9 +119,41 @@
 </head>
 
 <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="./">OldMartijntje's Toolkit📦</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="./">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="https://oldmartijntje.nl">Main🦖</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="https://docs.oldmartijntje.nl">Docs🌵</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank"
+                            href="https://github.com/oldmartijntje/localNodeBox">Github</a>
+                    </li>
+                </ul>
+                <span class="navbar-text" id="status">Checking...</span>
+            </div>
+        </div>
+    </nav>
     <div class="container">
         <h1>Spotify Playlist Fetcher</h1>
         <p>Enter a playlist URL to get song data in JSON format.</p>
+
+        <p>You can use this for your own use, or for example: <a
+                href="https://oldmartijntje.github.io/localNodeBox/misc/bracketing/tournament.html"
+                target="_blank">Bracketing</a>
+        </p>
 
         <input type="text" id="playlistUrl" placeholder="Enter Spotify playlist URL" />
         <button id="fetchButton" onclick="fetchPlaylist()">Fetch Playlist Data</button>
@@ -241,6 +282,16 @@
                 fetchButton.disabled = false;
             }
         }
+    </script>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZS4T7T7W1N"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-ZS4T7T7W1N');
     </script>
 </body>
 
