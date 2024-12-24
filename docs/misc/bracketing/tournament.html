@@ -1,7 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bracketing - OldMartijntje's Toolkit📦</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="https://i.imgur.com/1noWzDB.png" type="image/x-icon">
+    <meta name="description"
+        content="Here you can create a tournament bracket with a list of items. For example, you can use this to create a spotify music tournament bracket.">
+    <meta name="keywords"
+        content="OldMartijntje, Toolkit, Tools, Toys, Developers, Web Development, Software Development">
+    <meta name="author" content="OldMartijntje">
+    <meta property="og:image" content="https://i.imgur.com/NeU2I13.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .option {
@@ -93,8 +104,36 @@
 </head>
 
 <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="../../">OldMartijntje's Toolkit📦</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="../../">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="https://oldmartijntje.nl">Main🦖</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank" href="https://docs.oldmartijntje.nl">Docs🌵</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" target="_blank"
+                            href="https://github.com/oldmartijntje/localNodeBox">Github</a>
+                    </li>
+                </ul>
+                <span class="navbar-text" id="status">Checking...</span>
+            </div>
+        </div>
+    </nav>
     <!-- Setup Modal -->
-    <div class="modal fade show" id="setupModal" tabindex="-1" data-bs-backdrop="static" style="display: block;">
+    <div class="modal fade show" id="setupModal" tabindex="-1" data-bs-backdrop="static"
+        style="display: block; margin-top: 2rem;">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -104,7 +143,15 @@
                     <div class="mb-3">
                         <label class="form-label">Upload Tournament Data (JSON)</label>
                         <input type="file" class="form-control" id="jsonFile" accept=".json">
-                        <div class="form-text">File must contain array of objects with 'displayText' and 'url' fields
+                        <div class="form-text">Either a list file, or save file.<br />
+                            <ul>
+                                <li>List file: File must contain array of objects with 'displayText' and 'url' fields.
+                                </li>
+                                <li>Save file: A savefile created by this page.</li>
+                            </ul>
+                            You can get a list of songs from Spotify using the <a
+                                href="https://oldmartijntje.github.io/localNodeBox/dataTools/spotify/playlistFetcher.html"
+                                target="_blank">Playlist Fetcher</a>.
                         </div>
                         <div id="jsonValidation" class="mt-2"></div>
                     </div>
@@ -535,6 +582,14 @@
             URL.revokeObjectURL(url);
         }
 
+        function areOptionsEqual(opt1, opt2) {
+            return opt1.displayText === opt2.displayText && opt1.url === opt2.url;
+        }
+
+        function findMatchingOption(option, optionList) {
+            return optionList.find(opt => areOptionsEqual(opt, option));
+        }
+
         function loadSaveState(saveState) {
             // Validate save state structure
             if (!saveState.saveFile || !saveState.normalData || !Array.isArray(saveState.saveFile.rounds)) {
@@ -548,15 +603,19 @@
             currentRound = saveState.saveFile.currentRound;
             bracketData = saveState.normalData;
 
-            // Reconstruct rounds
+            // Reconstruct rounds while maintaining original option references
             rounds = saveState.saveFile.rounds.map(round =>
                 round.matches.map(match => ({
                     id: match.id,
-                    options: match.options.map(({ selected, ...option }) => option)
+                    options: match.options.map(savedOption => {
+                        // Find the matching original option from bracketData
+                        const originalOption = findMatchingOption(savedOption, bracketData);
+                        return originalOption || savedOption; // Fallback to saved option if not found
+                    })
                 }))
             );
 
-            // Reconstruct selections
+            // Reconstruct selections using the original option references
             selectedOptions.clear();
             historicalWinners.clear();
 
@@ -564,10 +623,22 @@
                 round.matches.forEach(match => {
                     const selectedOpts = match.options.filter(opt => opt.selected);
                     if (selectedOpts.length > 0) {
+                        const selectionSet = new Set();
+                        selectedOpts.forEach(savedOption => {
+                            const originalOption = findMatchingOption(savedOption, bracketData);
+                            if (originalOption) {
+                                selectionSet.add(originalOption);
+                            }
+                        });
+
                         if (roundIndex < currentRound) {
-                            historicalWinners.set(match.id, new Set(selectedOpts.map(({ selected, ...opt }) => opt)));
+                            if (selectionSet.size > 0) {
+                                historicalWinners.set(match.id, selectionSet);
+                            }
                         } else {
-                            selectedOptions.set(match.id, new Set(selectedOpts.map(({ selected, ...opt }) => opt)));
+                            if (selectionSet.size > 0) {
+                                selectedOptions.set(match.id, selectionSet);
+                            }
                         }
                     }
                 });
