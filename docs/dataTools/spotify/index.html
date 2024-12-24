@@ -12,12 +12,13 @@
     <div class="container mt-5">
         <div id="not-logged-in" class="text-center d-none">
             <h1 class="mb-4">Spotify Login Checker</h1>
-            <p>You are not logged in. Please provide your Spotify Client ID and click the button below to log in:</p>
+            <p>You are not logged in. Please provide <strong>your</strong> Spotify Client ID and click the button below
+                to log in:</p>
             <div class="mb-3">
                 <input type="text" id="clientIdInput" class="form-control" placeholder="Enter your Spotify Client ID">
             </div>
             <button id="loginButton" class="btn btn-primary">Log in with Spotify</button>
-            <button id="helpButton" class="btn btn-info mt-3">Need Help?</button>
+            <button id="helpButton" class="btn btn-info">Need Help?</button>
         </div>
 
         <div id="logged-in" class="text-center d-none">
@@ -48,7 +49,8 @@
                         <li>Click on "Create App".</li>
                         <li>Set the "Redirect URIs" field to
                             <code>https://oldmartijntje.github.io/localNodeBox/dataTools/spotify</code> to redirect back
-                            to this website.</li>
+                            to this website.
+                        </li>
                         <li>Select the "Web API" checkbox.</li>
                         <li>Fill in the other required fields as you see fit.</li>
                         <li>Click the "Save" button.</li>
