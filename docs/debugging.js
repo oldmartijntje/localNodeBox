@@ -25,6 +25,7 @@
         reader.onload = function (event) {
             try {
                 const data = JSON.parse(event.target.result);
+                localStorage.clear();
                 for (const key in data) {
                     if (data.hasOwnProperty(key)) {
                         localStorage.setItem(key, data[key]);
