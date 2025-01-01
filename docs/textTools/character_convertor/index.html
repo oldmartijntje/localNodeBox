@@ -177,6 +177,7 @@
                     if (!casePerfect.checked) {
                         flags += 'i';
                     }
+                    console.log(rule, flags)
                     const regex = new RegExp(rule.from, flags);
                     text = text.replace(regex, rule.to);
                 });
