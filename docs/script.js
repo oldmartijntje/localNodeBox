@@ -120,13 +120,13 @@ const toolsData = {
 };
 
 function setCategory(categoryId) {
-    localStorage.setItem('openedCategory', categoryId);
+    localStorage.setItem('localNodeBox.index.openedCategory', categoryId);
 }
 
 function renderTools(online) {
     const accordion = document.getElementById('toolAccordion');
     accordion.innerHTML = '';
-    const openedCategory = localStorage.getItem('openedCategory') || toolsData.categories[0].id;
+    const openedCategory = localStorage.getItem('localNodeBox.index.openedCategory') || toolsData.categories[0].id;
 
     toolsData.categories.forEach((category, index) => {
         const isFirst = category.id === openedCategory;
