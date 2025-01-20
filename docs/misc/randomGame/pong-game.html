@@ -41,6 +41,9 @@
             font-family: Arial, sans-serif;
             font-size: 18px;
             margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
         .victory-screen {
@@ -74,6 +77,13 @@
             align-items: center;
             margin: 20px;
             border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .waifu-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -86,17 +96,25 @@
     <div class="victory-screen" id="victoryScreen">
         <h1>Victory!</h1>
         <div class="waifu-container">
-            <img src="/api/placeholder/300/400" alt="Victory Reward" />
+            <img src="https://i.imgur.com/83Uu8uY.jpeg" alt="Victory Reward" />
         </div>
         <p>Congratulations! You've earned your reward!</p>
     </div>
+    <div class="victory-screen" id="losingScreen">
+        <h1>You lost :(</h1>
+        <div class="waifu-container">
+            <img src="https://i.imgur.com/Ew4JDiG.png" alt="Victory Reward" />
+        </div>
+        <p>Oof, Better luck next time!</p>
+    </div>
 
     <script>
+        // Previous basic setup remains the same
         const canvas = document.getElementById('pongCanvas');
         const ctx = canvas.getContext('2d');
         const statusElement = document.getElementById('powerupStatus');
 
-        // Game objects
+        // Game objects remain mostly the same
         const ball = {
             x: canvas.width / 2,
             y: canvas.height / 2,
@@ -105,7 +123,7 @@
             dx: 5,
             dy: 5,
             color: '#fff',
-            lastTouched: null // Track who last touched the ball
+            lastTouched: null
         };
 
         const paddleHeight = 100;
@@ -116,7 +134,8 @@
             height: paddleHeight,
             speed: 10,
             frozen: false,
-            isPlayer: true
+            isPlayer: true,
+            activePowerups: [] // New array to track active power-ups
         };
 
         const computer = {
@@ -125,93 +144,98 @@
             height: paddleHeight,
             speed: 5,
             frozen: false,
-            isPlayer: false
+            isPlayer: false,
+            activePowerups: [] // New array to track active power-ups
         };
 
-        // Power-up system
-        const powerUps = {
-            active: null,
-            timeLeft: 0,
-            current: null,
-            types: [
-                {
-                    name: 'Giant Paddle',
-                    color: '#ff0',
-                    duration: 10000,
-                    apply: (target) => {
-                        target.height = paddleHeight * 1.5;
-                        statusElement.textContent = `Active: Giant Paddle! (${target.isPlayer ? 'Player' : 'Computer'})`;
-                    },
-                    remove: (target) => {
-                        target.height = paddleHeight;
-                        statusElement.textContent = "";
-                    }
+        // Modified power-up system to handle multiple power-ups
+        const powerUpTypes = [
+            {
+                name: 'Giant Paddle',
+                color: '#ff0',
+                duration: 5000,
+                apply: (target) => {
+                    target.height = paddleHeight * 1.5;
                 },
-                {
-                    name: 'Fast Ball',
-                    color: '#f00',
-                    duration: 7500,
-                    apply: () => {
-                        ball.dx *= 1.5;
-                        ball.dy *= 1.5;
-                        ball.color = '#f00';
-                        statusElement.textContent = `Active: Fast Ball! (${ball.lastTouched.isPlayer ? 'Player' : 'Computer'})`;
-                    },
-                    remove: () => {
-                        ball.dx /= 1.5;
-                        ball.dy /= 1.5;
-                        ball.color = '#fff';
-                        statusElement.textContent = "";
-                    }
-                },
-                {
-                    name: 'Slow Motion',
-                    color: '#0ff',
-                    duration: 7500,
-                    apply: () => {
-                        ball.dx *= 0.5;
-                        ball.dy *= 0.5;
-                        ball.color = '#0ff';
-                        statusElement.textContent = `Active: Slow Motion! (${ball.lastTouched.isPlayer ? 'Player' : 'Computer'})`;
-                    },
-                    remove: () => {
-                        ball.dx *= 2;
-                        ball.dy *= 2;
-                        ball.color = '#fff';
-                        statusElement.textContent = "";
-                    }
-                },
-                {
-                    name: 'Freeze',
-                    color: '#00f',
-                    duration: 3000,
-                    apply: (target) => {
-                        const opponent = target.isPlayer ? computer : player;
-                        opponent.frozen = true;
-                        statusElement.textContent = `Active: ${opponent.isPlayer ? 'Player' : 'Computer'} Frozen!`;
-                    },
-                    remove: (target) => {
-                        const opponent = target.isPlayer ? computer : player;
-                        opponent.frozen = false;
-                        statusElement.textContent = "";
-                    }
+                remove: (target) => {
+                    target.height = paddleHeight;
                 }
-            ],
-            spawn: {
-                x: 0,
-                y: 0,
-                radius: 15,
-                active: false
+            },
+            {
+                name: 'Fast Ball',
+                color: '#f00',
+                duration: 3000,
+                apply: () => {
+                    ball.dx *= 1.5;
+                    ball.dy *= 1.5;
+                    ball.color = '#f00';
+                },
+                remove: () => {
+                    ball.dx /= 1.5;
+                    ball.dy /= 1.5;
+                    ball.color = '#fff';
+                }
+            },
+            {
+                name: 'Slow Motion',
+                color: '#0ff',
+                duration: 4000,
+                apply: () => {
+                    ball.dx *= 0.5;
+                    ball.dy *= 0.5;
+                    ball.color = '#0ff';
+                },
+                remove: () => {
+                    ball.dx *= 2;
+                    ball.dy *= 2;
+                    ball.color = '#fff';
+                }
+            },
+            {
+                name: 'Freeze',
+                color: '#00f',
+                duration: 2000,
+                apply: (target) => {
+                    const opponent = target.isPlayer ? computer : player;
+                    opponent.frozen = true;
+                },
+                remove: (target) => {
+                    const opponent = target.isPlayer ? computer : player;
+                    opponent.frozen = false;
+                }
             }
+        ];
+
+        const powerUps = {
+            spawned: [], // Array to hold multiple spawned power-ups
+            maxSpawned: 3, // Maximum number of power-ups that can be on screen
+            spawnInterval: 3000, // Spawn a new power-up every 3 seconds
+            spawnTimer: 0
         };
 
-        // Event listener for paddle movement
+        function createPowerUpInstance(type, x, y) {
+            return {
+                type: type,
+                x: x,
+                y: y,
+                radius: 15
+            };
+        }
+
+        function createActivePowerUp(type, target) {
+            return {
+                type: type,
+                timeLeft: type.duration,
+                target: target
+            };
+        }
+
+        // Event listener for paddle movement remains the same
         canvas.addEventListener('mousemove', (e) => {
             if (!player.frozen) {
                 const rect = canvas.getBoundingClientRect();
                 player.y = e.clientY - rect.top - player.height / 2;
 
-                // Keep paddle within canvas bounds
                 if (player.y < 0) player.y = 0;
                 if (player.y + player.height > canvas.height) {
                     player.y = canvas.height - player.height;
@@ -219,24 +243,84 @@
             }
         });
 
-        function checkVictory() {
-            if (player.score >= 10) {
-                document.getElementById('victoryScreen').style.display = 'flex';
-                return true;
-            }
-            return false;
-        }
-
         function spawnPowerUp() {
-            if (!powerUps.spawn.active && !powerUps.active && ball.lastTouched) {
-                powerUps.spawn.active = true;
-                powerUps.spawn.x = canvas.width / 2;
-                powerUps.spawn.y = Math.random() * (canvas.height - 30) + 15;
-                powerUps.current = powerUps.types[Math.floor(Math.random() * powerUps.types.length)];
+            if (powerUps.spawned.length < powerUps.maxSpawned && ball.lastTouched) {
+                const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+                const x = canvas.width / 2;
+                const y = Math.random() * (canvas.height - 30) + 15;
+                powerUps.spawned.push(createPowerUpInstance(type, x, y));
             }
         }
 
-        // Drawing functions remain the same
+        function updatePowerUps(deltaTime) {
+            // Update spawn timer
+            powerUps.spawnTimer += deltaTime;
+            if (powerUps.spawnTimer >= powerUps.spawnInterval) {
+                spawnPowerUp();
+                powerUps.spawnTimer = 0;
+            }
+
+            // Update active power-ups for both players
+            [player, computer].forEach(paddle => {
+                for (let i = paddle.activePowerups.length - 1; i >= 0; i--) {
+                    const powerUp = paddle.activePowerups[i];
+                    powerUp.timeLeft -= deltaTime;
+                    if (powerUp.timeLeft <= 0) {
+                        powerUp.type.remove(paddle);
+                        paddle.activePowerups.splice(i, 1);
+                    }
+                }
+            });
+
+            // Update status display
+            updatePowerUpStatus();
+        }
+
+        function updatePowerUpStatus() {
+            let statusHtml = '';
+
+            [player, computer].forEach(paddle => {
+                if (paddle.activePowerups.length > 0) {
+                    paddle.activePowerups.forEach(powerUp => {
+                        const timeLeft = (powerUp.timeLeft / 1000).toFixed(1);
+                        statusHtml += `<div>${paddle.isPlayer ? 'Player' : 'Computer'}: ${powerUp.type.name} (${timeLeft}s)</div>`;
+                    });
+                }
+            });
+
+            statusElement.innerHTML = statusHtml;
+        }
+
+        function checkPowerUpCollisions() {
+            for (let i = powerUps.spawned.length - 1; i >= 0; i--) {
+                const powerUp = powerUps.spawned[i];
+                const dx = ball.x - powerUp.x;
+                const dy = ball.y - powerUp.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < ball.radius + powerUp.radius) {
+                    // Apply power-up to last paddle that touched the ball
+                    const newPowerUp = createActivePowerUp(powerUp.type, ball.lastTouched);
+                    ball.lastTouched.activePowerups.push(newPowerUp);
+                    powerUp.type.apply(ball.lastTouched);
+
+                    // Remove collected power-up
+                    powerUps.spawned.splice(i, 1);
+                }
+            }
+        }
+
+        function drawPowerUps() {
+            powerUps.spawned.forEach(powerUp => {
+                ctx.beginPath();
+                ctx.arc(powerUp.x, powerUp.y, powerUp.radius, 0, Math.PI * 2);
+                ctx.fillStyle = powerUp.type.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        // Previous game functions (drawBall, drawPaddle, updateBall, etc.) remain the same
         function drawBall() {
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
@@ -250,39 +334,15 @@
             ctx.fillRect(x, y, paddleWidth, height);
         }
 
-        function drawPowerUp() {
-            if (powerUps.spawn.active) {
-                ctx.beginPath();
-                ctx.arc(powerUps.spawn.x, powerUps.spawn.y, powerUps.spawn.radius, 0, Math.PI * 2);
-                ctx.fillStyle = powerUps.current.color;
-                ctx.fill();
-                ctx.closePath();
+        function checkVictory() {
+            if (player.score >= 10) {
+                document.getElementById('victoryScreen').style.display = 'flex';
+                return true;
+            } else if (computer.score >= 10) {
+                document.getElementById('losingScreen').style.display = 'flex';
+                return true;
             }
-        }
-
-        function checkPowerUpCollision() {
-            if (powerUps.spawn.active && ball.lastTouched) {
-                const dx = ball.x - powerUps.spawn.x;
-                const dy = ball.y - powerUps.spawn.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < ball.radius + powerUps.spawn.radius) {
-                    powerUps.spawn.active = false;
-                    powerUps.active = powerUps.current;
-                    powerUps.timeLeft = powerUps.current.duration;
-                    powerUps.current.apply(ball.lastTouched);
-                }
-            }
-        }
-
-        function updatePowerUps(deltaTime) {
-            if (powerUps.timeLeft > 0) {
-                powerUps.timeLeft -= deltaTime;
-                if (powerUps.timeLeft <= 0) {
-                    powerUps.active.remove(ball.lastTouched);
-                    powerUps.active = null;
-                }
-            }
+            return false;
         }
 
         function updateComputerPaddle() {
@@ -296,7 +356,6 @@
                     computer.y -= computer.speed;
                 }
 
-                // Keep computer paddle within canvas bounds
                 if (computer.y < 0) computer.y = 0;
                 if (computer.y + computer.height > canvas.height) {
                     computer.y = canvas.height - computer.height;
@@ -317,12 +376,14 @@
             if (ball.dx < 0 && ball.x - ball.radius < paddleWidth &&
                 ball.y > player.y && ball.y < player.y + player.height) {
                 ball.dx *= -1;
+                ball.dy += Math.random() * 2 - 1; // Add a random offset between -1 and 1
                 ball.lastTouched = player;
             }
 
             if (ball.dx > 0 && ball.x + ball.radius > canvas.width - paddleWidth &&
                 ball.y > computer.y && ball.y < computer.y + computer.height) {
                 ball.dx *= -1;
+                ball.dy += Math.random() * 2 - 1; // Add a random offset between -1 and 1
                 ball.lastTouched = computer;
             }
 
@@ -330,13 +391,19 @@
             if (ball.x + ball.radius > canvas.width) {
                 player.score++;
                 document.getElementById('playerScore').textContent = player.score;
-                checkVictory();
+                if (checkVictory()) {
+                    return false;
+                }
                 resetBall();
             } else if (ball.x - ball.radius < 0) {
                 computer.score++;
                 document.getElementById('computerScore').textContent = computer.score;
+                if (checkVictory()) {
+                    return false;
+                }
                 resetBall();
             }
+            return true;
         }
 
         function resetBall() {
@@ -344,22 +411,14 @@
             ball.y = canvas.height / 2;
             ball.dx = -ball.dx;
             ball.dy = Math.random() * 10 - 5;
-            ball.lastTouched = null; // Reset last touched on point score
+            ball.color = '#fff';
         }
 
         let lastTime = 0;
-        let powerUpTimer = 0;
 
         function gameLoop(timestamp) {
             const deltaTime = timestamp - lastTime;
             lastTime = timestamp;
-
-            // Spawn power-ups periodically
-            powerUpTimer += deltaTime;
-            if (powerUpTimer > 5000) { // Spawn every 5 seconds
-                spawnPowerUp();
-                powerUpTimer = 0;
-            }
 
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -371,12 +430,14 @@
             drawBall();
             drawPaddle(0, player.y, player.height, player.frozen);
             drawPaddle(canvas.width - paddleWidth, computer.y, computer.height, computer.frozen);
-            drawPowerUp();
+            drawPowerUps();
 
             // Update game state
-            updateBall();
+            if (updateBall() == false) {
+                return;
+            }
             updateComputerPaddle();
-            checkPowerUpCollision();
+            checkPowerUpCollisions();
 
             requestAnimationFrame(gameLoop);
         }
