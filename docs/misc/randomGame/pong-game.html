@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong - OldMartijntje's Toolkit📦</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" href="https://i.imgur.com/1noWzDB.png" type="image/x-icon">
+    <meta property="og:image" content="https://i.imgur.com/NeU2I13.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="description" content="A simple Pong game built with HTML5 Canvas and JavaScript.">
+    <meta name="keywords" content="pong, game, canvas, javascript, html5">
+    <meta name="author" content="OldMartijntje">
+    <style>
+        canvas {
+            border: 2px solid #fff;
+            background: #000;
+            display: block;
+            margin: 0 auto;
+        }
+
+        body {
+            background: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        .score {
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .powerup-status {
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        .victory-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            font-family: Arial, sans-serif;
+            z-index: 100;
+        }
+
+        .victory-screen h1 {
+            font-size: 48px;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .waifu-container {
+            width: 300px;
+            height: 400px;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="score">Player: <span id="playerScore">0</span> | Computer: <span id="computerScore">0</span></div>
+    <canvas id="pongCanvas" width="800" height="400"></canvas>
+    <div class="powerup-status" id="powerupStatus"></div>
+
+    <div class="victory-screen" id="victoryScreen">
+        <h1>Victory!</h1>
+        <div class="waifu-container">
+            <img src="/api/placeholder/300/400" alt="Victory Reward" />
+        </div>
+        <p>Congratulations! You've earned your reward!</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('pongCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusElement = document.getElementById('powerupStatus');
+
+        // Game objects
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 10,
+            speed: 7,
+            dx: 5,
+            dy: 5,
+            color: '#fff',
+            lastTouched: null // Track who last touched the ball
+        };
+
+        const paddleHeight = 100;
+        const paddleWidth = 10;
+        const player = {
+            y: canvas.height / 2 - paddleHeight / 2,
+            score: 0,
+            height: paddleHeight,
+            speed: 10,
+            frozen: false,
+            isPlayer: true
+        };
+
+        const computer = {
+            y: canvas.height / 2 - paddleHeight / 2,
+            score: 0,
+            height: paddleHeight,
+            speed: 5,
+            frozen: false,
+            isPlayer: false
+        };
+
+        // Power-up system
+        const powerUps = {
+            active: null,
+            timeLeft: 0,
+            current: null,
+            types: [
+                {
+                    name: 'Giant Paddle',
+                    color: '#ff0',
+                    duration: 10000,
+                    apply: (target) => {
+                        target.height = paddleHeight * 1.5;
+                        statusElement.textContent = `Active: Giant Paddle! (${target.isPlayer ? 'Player' : 'Computer'})`;
+                    },
+                    remove: (target) => {
+                        target.height = paddleHeight;
+                        statusElement.textContent = "";
+                    }
+                },
+                {
+                    name: 'Fast Ball',
+                    color: '#f00',
+                    duration: 7500,
+                    apply: () => {
+                        ball.dx *= 1.5;
+                        ball.dy *= 1.5;
+                        ball.color = '#f00';
+                        statusElement.textContent = `Active: Fast Ball! (${ball.lastTouched.isPlayer ? 'Player' : 'Computer'})`;
+                    },
+                    remove: () => {
+                        ball.dx /= 1.5;
+                        ball.dy /= 1.5;
+                        ball.color = '#fff';
+                        statusElement.textContent = "";
+                    }
+                },
+                {
+                    name: 'Slow Motion',
+                    color: '#0ff',
+                    duration: 7500,
+                    apply: () => {
+                        ball.dx *= 0.5;
+                        ball.dy *= 0.5;
+                        ball.color = '#0ff';
+                        statusElement.textContent = `Active: Slow Motion! (${ball.lastTouched.isPlayer ? 'Player' : 'Computer'})`;
+                    },
+                    remove: () => {
+                        ball.dx *= 2;
+                        ball.dy *= 2;
+                        ball.color = '#fff';
+                        statusElement.textContent = "";
+                    }
+                },
+                {
+                    name: 'Freeze',
+                    color: '#00f',
+                    duration: 3000,
+                    apply: (target) => {
+                        const opponent = target.isPlayer ? computer : player;
+                        opponent.frozen = true;
+                        statusElement.textContent = `Active: ${opponent.isPlayer ? 'Player' : 'Computer'} Frozen!`;
+                    },
+                    remove: (target) => {
+                        const opponent = target.isPlayer ? computer : player;
+                        opponent.frozen = false;
+                        statusElement.textContent = "";
+                    }
+                }
+            ],
+            spawn: {
+                x: 0,
+                y: 0,
+                radius: 15,
+                active: false
+            }
+        };
+
+        // Event listener for paddle movement
+        canvas.addEventListener('mousemove', (e) => {
+            if (!player.frozen) {
+                const rect = canvas.getBoundingClientRect();
+                player.y = e.clientY - rect.top - player.height / 2;
+
+                // Keep paddle within canvas bounds
+                if (player.y < 0) player.y = 0;
+                if (player.y + player.height > canvas.height) {
+                    player.y = canvas.height - player.height;
+                }
+            }
+        });
+
+        function checkVictory() {
+            if (player.score >= 10) {
+                document.getElementById('victoryScreen').style.display = 'flex';
+                return true;
+            }
+            return false;
+        }
+
+        function spawnPowerUp() {
+            if (!powerUps.spawn.active && !powerUps.active && ball.lastTouched) {
+                powerUps.spawn.active = true;
+                powerUps.spawn.x = canvas.width / 2;
+                powerUps.spawn.y = Math.random() * (canvas.height - 30) + 15;
+                powerUps.current = powerUps.types[Math.floor(Math.random() * powerUps.types.length)];
+            }
+        }
+
+        // Drawing functions remain the same
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle(x, y, height, isFrozen) {
+            ctx.fillStyle = isFrozen ? '#87CEEB' : '#fff';
+            ctx.fillRect(x, y, paddleWidth, height);
+        }
+
+        function drawPowerUp() {
+            if (powerUps.spawn.active) {
+                ctx.beginPath();
+                ctx.arc(powerUps.spawn.x, powerUps.spawn.y, powerUps.spawn.radius, 0, Math.PI * 2);
+                ctx.fillStyle = powerUps.current.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function checkPowerUpCollision() {
+            if (powerUps.spawn.active && ball.lastTouched) {
+                const dx = ball.x - powerUps.spawn.x;
+                const dy = ball.y - powerUps.spawn.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < ball.radius + powerUps.spawn.radius) {
+                    powerUps.spawn.active = false;
+                    powerUps.active = powerUps.current;
+                    powerUps.timeLeft = powerUps.current.duration;
+                    powerUps.current.apply(ball.lastTouched);
+                }
+            }
+        }
+
+        function updatePowerUps(deltaTime) {
+            if (powerUps.timeLeft > 0) {
+                powerUps.timeLeft -= deltaTime;
+                if (powerUps.timeLeft <= 0) {
+                    powerUps.active.remove(ball.lastTouched);
+                    powerUps.active = null;
+                }
+            }
+        }
+
+        function updateComputerPaddle() {
+            if (!computer.frozen) {
+                const computerCenter = computer.y + computer.height / 2;
+                const ballCenter = ball.y;
+
+                if (computerCenter < ballCenter - 35) {
+                    computer.y += computer.speed;
+                } else if (computerCenter > ballCenter + 35) {
+                    computer.y -= computer.speed;
+                }
+
+                // Keep computer paddle within canvas bounds
+                if (computer.y < 0) computer.y = 0;
+                if (computer.y + computer.height > canvas.height) {
+                    computer.y = canvas.height - computer.height;
+                }
+            }
+        }
+
+        function updateBall() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Collision with top and bottom walls
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.dy *= -1;
+            }
+
+            // Collision with paddles
+            if (ball.dx < 0 && ball.x - ball.radius < paddleWidth &&
+                ball.y > player.y && ball.y < player.y + player.height) {
+                ball.dx *= -1;
+                ball.lastTouched = player;
+            }
+
+            if (ball.dx > 0 && ball.x + ball.radius > canvas.width - paddleWidth &&
+                ball.y > computer.y && ball.y < computer.y + computer.height) {
+                ball.dx *= -1;
+                ball.lastTouched = computer;
+            }
+
+            // Score points
+            if (ball.x + ball.radius > canvas.width) {
+                player.score++;
+                document.getElementById('playerScore').textContent = player.score;
+                checkVictory();
+                resetBall();
+            } else if (ball.x - ball.radius < 0) {
+                computer.score++;
+                document.getElementById('computerScore').textContent = computer.score;
+                resetBall();
+            }
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = -ball.dx;
+            ball.dy = Math.random() * 10 - 5;
+            ball.lastTouched = null; // Reset last touched on point score
+        }
+
+        let lastTime = 0;
+        let powerUpTimer = 0;
+
+        function gameLoop(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Spawn power-ups periodically
+            powerUpTimer += deltaTime;
+            if (powerUpTimer > 5000) { // Spawn every 5 seconds
+                spawnPowerUp();
+                powerUpTimer = 0;
+            }
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update power-ups
+            updatePowerUps(deltaTime);
+
+            // Draw game objects
+            drawBall();
+            drawPaddle(0, player.y, player.height, player.frozen);
+            drawPaddle(canvas.width - paddleWidth, computer.y, computer.height, computer.frozen);
+            drawPowerUp();
+
+            // Update game state
+            updateBall();
+            updateComputerPaddle();
+            checkPowerUpCollision();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        gameLoop(0);
+    </script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZS4T7T7W1N"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-ZS4T7T7W1N');
+    </script>
+    <script src="https://oldmartijntje.github.io/localNodeBox/debugging.js"></script>
+</body>
+
+</html>

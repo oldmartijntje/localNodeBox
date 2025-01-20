@@ -115,6 +115,19 @@ const toolsData = {
                     onlineOnly: true
                 }
             ]
+        },
+        {
+            id: "games",
+            title: "Games",
+            tools: [
+                {
+                    href: "./misc/randomGame/pong-game.html",
+                    text: "Epic Pong Game (vs AI)",
+                    toolId: "9",
+                    isLocal: false,
+                    inDevelopment: false
+                }
+            ]
         }
     ]
 };
