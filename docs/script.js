@@ -128,6 +128,19 @@ const toolsData = {
                     inDevelopment: false
                 }
             ]
+        },
+        {
+            id: "education",
+            title: "Educational Tools",
+            tools: [
+                {
+                    href: "./educationalTools/math/snijpunt.html",
+                    text: "Line Intersection Excersise",
+                    toolId: "10",
+                    isLocal: false,
+                    inDevelopment: false
+                }
+            ]
         }
     ]
 };
