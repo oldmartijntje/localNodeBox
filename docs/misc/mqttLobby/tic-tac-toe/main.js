@@ -23,6 +23,7 @@ let clientIdentifier = Math.random().toString(16).substr(2, 8);
 console.log(clientIdentifier);
 let iAmHost = false;
 let gameState;
+let lastServerMessage;
 
 // client.on('message', (topic, message) => {
 //     const msg = message.toString();
@@ -36,11 +37,40 @@ let currentPlayer = 'X';
 let gameBoard = ['', '', '', '', '', '', '', '', ''];
 let gameActive = true;
 
+checkForDisconnects()
+
 function showWaitingOverlay(show) {
     const overlay = document.querySelector('.waiting-overlay');
     overlay.style.display = show ? 'flex' : 'none';
     isMyTurn = !show;
 }
+
+function checkForDisconnects() {
+    const now = Date.now();
+    if (iAmHost) {
+        for (let clientId in clientConnections) {
+            if (now - clientConnections[clientId].lastMessageReceived > 60000) {
+                // longer than 60 seconds since last message
+                cleanupLobby();
+                backToSelection();
+                return;
+            } else if (now - clientConnections[clientId].lastMessageReceived > 10000) {
+                clientConnections[clientId].lastMessageSent = now;
+                client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.PING, messageFromServer: true, moment: now }));
+            }
+        }
+    } else if (lobbyId != null && lastServerMessage != null) {
+        if (now - lastServerMessage > 60000) {
+            cleanupLobby();
+            backToSelection();
+            return;
+        } else if (now - lastServerMessage > 10000) {
+            client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.PING, messageFromServer: false, moment: now }));
+        }
+    }
+    setTimeout(checkForDisconnects, 10000);
+}
+
 
 function initializeGame(asHost) {
     document.getElementById('join-screen').classList.add('d-none');
@@ -84,6 +114,8 @@ client.on('message', (topic, message) => {
     }
     console.log(formatted);
     if (formatted.type === MqttProtocols.QUIT) {
+        // in this game we should also leave the lobby
+        // in other games you'd just clean up the clientConnections object
         cleanupLobby(topic);
         backToSelection();
     } else if (iAmHost) {
@@ -96,6 +128,8 @@ client.on('message', (topic, message) => {
                 }
                 client.subscribe(clientConnections[formatted.clientId].privateTopic, (err) => { });
                 client.publish(`https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}`, JSON.stringify({ type: MqttProtocols.SWITCHING_PROTOCOLS, privateTopic: clientConnections[formatted.clientId].privateTopic }));
+            } else {
+                client.publish(`https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}`, JSON.stringify({ type: MqttProtocols.FULL_LOBBY }));
             }
         } else if (formatted.type === MqttProtocols.OK) {
             initializeGame(true)
@@ -106,21 +140,50 @@ client.on('message', (topic, message) => {
                 startingPlayer: startingPlayer
             };
             for (let clientId in clientConnections) {
-                client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: true }));
+                if (topic === clientConnections[clientId].privateTopic) {
+                    clientConnections[clientId].lastMessageReceived = Date.now();
+                    clientConnections[clientId].lastMessageSent = Date.now();
+                    client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: true }));
+                }
+            }
+        } else if (formatted.type === MqttProtocols.PONG && !formatted.messageFromServer) {
+            if (formatted.moment < lastServerMessage - 10000) {
+                return;
+            }
+            for (let clientId in clientConnections) {
+                if (topic === clientConnections[clientId].privateTopic) {
+                    clientConnections[clientId].lastMessageReceived = Date.now();
+                }
+            }
+        } else if (formatted.type === MqttProtocols.PING && !formatted.messageFromServer) {
+            if (formatted.moment > lastServerMessage - 10000) {
+                client.publish(topic, JSON.stringify({ type: MqttProtocols.PONG, messageFromServer: true, moment: Date.now() }));
             }
         }
     } else if (!iAmHost) {
         if (formatted.type === MqttProtocols.SWITCHING_PROTOCOLS) {
+            lastServerMessage = Date.now();
             unsubscribe(topic);
             lobbyId = formatted.privateTopic;
             client.subscribe(lobbyId, (err) => { });
             client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.OK, messageFromServer: false }));
         } else if (formatted.type === MqttProtocols.GAME_STATE && formatted.messageFromServer) {
+            lastServerMessage = Date.now();
             gameBoard = formatted.gameState.gameBoard;
             currentPlayer = formatted.gameState.currentPlayer;
             gameActive = formatted.gameState.gameActive;
             startingPlayer = formatted.gameState.startingPlayer;
             initializeGame(false);
+        } else if (formatted.type === MqttProtocols.PING && formatted.messageFromServer) {
+            lastServerMessage = Date.now();
+            if (formatted.moment > lastServerMessage - 10000) {
+                client.publish(topic, JSON.stringify({ type: MqttProtocols.PONG, messageFromServer: false, moment: Date.now() }));
+            }
+        } else if (formatted.type === MqttProtocols.PONG && formatted.messageFromServer) {
+            if (formatted.moment < lastServerMessage - 10000) {
+                return;
+            }
+            lastServerMessage = Date.now();
         }
     } else {
         client.publish(topic, JSON.stringify({ type: MqttProtocols.INVALID }));
@@ -168,6 +231,7 @@ function backToSelection() {
     unsubscribe(lobbyId);
     unsubscribe(clientIdListenTopic);
     resetGame();
+    lobbyId = null;
 }
 
 function joinGame() {
