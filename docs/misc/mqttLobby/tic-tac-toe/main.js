@@ -10,8 +10,9 @@ class MqttProtocols {
     static GAME_STATE = '202 Accepted';
     static FULL_LOBBY = '416 Request Range Not Satisfiable'
     static INVALID = '400 Bad Request';
-    static KICKED = '205 Reset Content';
-    static BAN = '403 Forbidden';
+    static QUIT = '205 Reset Content';
+    static KICK = '403 Forbidden';
+    static BAN = '401 Unauthorized';
 }
 
 let lobbyId;
@@ -30,9 +31,39 @@ let gameState;
 
 // client.publish(sendingPingRequestURL, JSON.stringify({ userId: settings.userId }));
 
+let startingPlayer = ['X', 'O'][Math.floor(Math.random() * 2)];
 let currentPlayer = 'X';
 let gameBoard = ['', '', '', '', '', '', '', '', ''];
 let gameActive = true;
+
+function showWaitingOverlay(show) {
+    const overlay = document.querySelector('.waiting-overlay');
+    overlay.style.display = show ? 'flex' : 'none';
+    isMyTurn = !show;
+}
+
+function initializeGame(asHost) {
+    document.getElementById('join-screen').classList.add('d-none');
+    document.getElementById('host-screen').classList.add('d-none');
+    document.getElementById('game-screen').classList.remove('d-none');
+    mySymbol = asHost ? 'X' : 'O';
+    isMyTurn = startingPlayer === mySymbol;
+    showWaitingOverlay(!isMyTurn);
+    document.getElementById('game-status').textContent = isMyTurn ?
+        `Your turn (${mySymbol})` :
+        `Waiting for opponent (${mySymbol === 'X' ? 'O' : 'X'})`;
+}
+
+// Modify the showHostScreen function
+function showHostScreen() {
+    let code = generateGameCode();
+    iAmHost = true;
+    document.getElementById('selection-screen').classList.add('d-none');
+    document.getElementById('host-screen').classList.remove('d-none');
+    document.getElementById('game-code').textContent = code;
+    lobbyId = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${code}`;
+    client.subscribe(lobbyId, (err) => { });
+}
 
 function generateGameCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -52,21 +83,47 @@ client.on('message', (topic, message) => {
         return;
     }
     console.log(formatted);
-    if (iAmHost && formatted.type === MqttProtocols.JOIN) {
-        if (Object.keys(clientConnections).length < maxClients) {
-            clientConnections[formatted.clientId] = {
-                privateTopic: `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}/lobby/${lobbyId}/offset/${Math.random().toString(16).substr(2, 8)}`,
-                lastMessageSent: Date.now(),
-                lastMessageReceived: Date.now(),
+    if (formatted.type === MqttProtocols.QUIT) {
+        cleanupLobby(topic);
+        backToSelection();
+    } else if (iAmHost) {
+        if (formatted.type === MqttProtocols.JOIN) {
+            if (Object.keys(clientConnections).length < maxClients) {
+                clientConnections[formatted.clientId] = {
+                    privateTopic: `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}/lobby/${lobbyId}/offset/${Math.random().toString(16).substr(2, 8)}`,
+                    lastMessageSent: Date.now(),
+                    lastMessageReceived: Date.now(),
+                }
+                client.subscribe(clientConnections[formatted.clientId].privateTopic, (err) => { });
+                client.publish(`https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}`, JSON.stringify({ type: MqttProtocols.SWITCHING_PROTOCOLS, privateTopic: clientConnections[formatted.clientId].privateTopic }));
             }
-            client.subscribe(clientConnections[formatted.clientId].privateTopic, (err) => { });
-            client.publish(`https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}`, JSON.stringify({ type: MqttProtocols.SWITCHING_PROTOCOLS, privateTopic: clientConnections[formatted.clientId].privateTopic }));
+        } else if (formatted.type === MqttProtocols.OK) {
+            initializeGame(true)
+            gameState = {
+                gameBoard: gameBoard,
+                currentPlayer: currentPlayer,
+                gameActive: gameActive,
+                startingPlayer: startingPlayer
+            };
+            for (let clientId in clientConnections) {
+                client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: true }));
+            }
         }
-    } else if (!iAmHost && formatted.type === MqttProtocols.SWITCHING_PROTOCOLS) {
-        unsubscribe(topic);
-        lobbyId = formatted.privateTopic;
-        client.subscribe(lobbyId, (err) => { });
-        client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.OK, messageFromServer: false }));
+    } else if (!iAmHost) {
+        if (formatted.type === MqttProtocols.SWITCHING_PROTOCOLS) {
+            unsubscribe(topic);
+            lobbyId = formatted.privateTopic;
+            client.subscribe(lobbyId, (err) => { });
+            client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.OK, messageFromServer: false }));
+        } else if (formatted.type === MqttProtocols.GAME_STATE && formatted.messageFromServer) {
+            gameBoard = formatted.gameState.gameBoard;
+            currentPlayer = formatted.gameState.currentPlayer;
+            gameActive = formatted.gameState.gameActive;
+            startingPlayer = formatted.gameState.startingPlayer;
+            initializeGame(false);
+        }
+    } else {
+        client.publish(topic, JSON.stringify({ type: MqttProtocols.INVALID }));
     }
 });
 
@@ -85,10 +142,14 @@ function showHostScreen() {
 }
 
 function unsubscribe(topic) {
+    if (topic) {
+        return;
+    }
     try {
         client.unsubscribe(lobbyId, (err) => { });
     } catch (e) {
-        console.log(e);
+        console.warn(`couldn't unsubscrib from ${topic}`);
+        // console.log(e);
     }
 }
 
@@ -112,8 +173,6 @@ function backToSelection() {
 function joinGame() {
     const code = document.getElementById('code-input').value;
     if (code.length === 6) {
-        // document.getElementById('join-screen').classList.add('d-none');
-        // document.getElementById('game-screen').classList.remove('d-none');
         lobbyId = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${code}`
         let offset = Math.random().toString(16).substr(2, 8);
         clientIdListenTopic = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${clientIdentifier}/offset/${offset}`;
@@ -168,4 +227,27 @@ function resetGame() {
     Array.from(document.getElementsByClassName('game-cell')).forEach(cell => {
         cell.textContent = '';
     });
+}
+
+function cleanupLobby(topic = "") {
+    unsubscribe('#');
+    // if (topic != "") {
+    //     unsubscribe(topic);
+    // }
+    // unsubscribe(lobbyId);
+    if (iAmHost) {
+        for (let clientId in clientConnections) {
+            // unsubscribe(clientConnections[clientId].privateTopic);
+            client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.QUIT }));
+        }
+    } else {
+        client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.QUIT }));
+    }
+    clientConnections = {};
+    maxClients = 1;
+    lobbyId = null;
+    clientIdListenTopic = null;
+    iAmHost = false;
+    gameState = null;
+    startingPlayer = ['X', 'O'][Math.floor(Math.random() * 2)];
 }

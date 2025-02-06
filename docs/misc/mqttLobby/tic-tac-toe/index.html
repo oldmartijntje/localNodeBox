@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe - Host or Join</title>
+    <title>MQTT Tic Tac Toe</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
@@ -24,6 +24,34 @@
             grid-template-columns: repeat(3, 100px);
             gap: 0;
             margin: 20px auto;
+            position: relative;
+        }
+
+        .waiting-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .waiting-message {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .game-container {
+            position: relative;
+            width: fit-content;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -62,19 +90,24 @@
         <!-- Game Screen -->
         <div id="game-screen" class="text-center d-none">
             <h2 class="mb-4">Tic Tac Toe</h2>
-            <div class="game-board">
-                <div class="game-cell" onclick="makeMove(0)"></div>
-                <div class="game-cell" onclick="makeMove(1)"></div>
-                <div class="game-cell" onclick="makeMove(2)"></div>
-                <div class="game-cell" onclick="makeMove(3)"></div>
-                <div class="game-cell" onclick="makeMove(4)"></div>
-                <div class="game-cell" onclick="makeMove(5)"></div>
-                <div class="game-cell" onclick="makeMove(6)"></div>
-                <div class="game-cell" onclick="makeMove(7)"></div>
-                <div class="game-cell" onclick="makeMove(8)"></div>
+            <div class="game-container">
+                <div class="game-board">
+                    <div class="game-cell" onclick="makeMove(0)"></div>
+                    <div class="game-cell" onclick="makeMove(1)"></div>
+                    <div class="game-cell" onclick="makeMove(2)"></div>
+                    <div class="game-cell" onclick="makeMove(3)"></div>
+                    <div class="game-cell" onclick="makeMove(4)"></div>
+                    <div class="game-cell" onclick="makeMove(5)"></div>
+                    <div class="game-cell" onclick="makeMove(6)"></div>
+                    <div class="game-cell" onclick="makeMove(7)"></div>
+                    <div class="game-cell" onclick="makeMove(8)"></div>
+                    <div class="waiting-overlay">
+                        <div class="waiting-message">Waiting for opponent's move...</div>
+                    </div>
+                </div>
             </div>
             <div id="game-status" class="alert alert-info mt-3">Your turn (X)</div>
-            <button class="btn btn-danger" onclick="backToSelection()">Exit Game</button>
+            <button class="btn btn-danger" onclick="cleanupLobby();backToSelection();">Exit Game</button>
         </div>
     </div>
 
