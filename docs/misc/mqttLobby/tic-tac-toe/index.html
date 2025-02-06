@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe - Host or Join</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .game-cell {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #333;
+            font-size: 3em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 0;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <!-- Initial Selection Screen -->
+        <div id="selection-screen" class="text-center">
+            <h1 class="mb-4">Tic Tac Toe</h1>
+            <div class="d-grid gap-3 col-6 mx-auto">
+                <button class="btn btn-primary btn-lg" onclick="showHostScreen()">Host Game</button>
+                <button class="btn btn-success btn-lg" onclick="showJoinScreen()">Join Game</button>
+            </div>
+        </div>
+
+        <!-- Host Screen -->
+        <div id="host-screen" class="text-center d-none">
+            <h2 class="mb-4">Your Game Code</h2>
+            <div class="alert alert-info col-md-6 mx-auto">
+                <h3 id="game-code" class="mb-0"></h3>
+            </div>
+            <button class="btn btn-secondary" onclick="backToSelection()">Back</button>
+        </div>
+
+        <!-- Join Screen -->
+        <div id="join-screen" class="text-center d-none">
+            <h2 class="mb-4">Enter Game Code</h2>
+            <div class="col-md-6 mx-auto">
+                <input type="text" id="code-input" class="form-control form-control-lg mb-3" maxlength="6">
+                <button class="btn btn-success" onclick="joinGame()">Join</button>
+                <button class="btn btn-secondary" onclick="backToSelection()">Back</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="text-center d-none">
+            <h2 class="mb-4">Tic Tac Toe</h2>
+            <div class="game-board">
+                <div class="game-cell" onclick="makeMove(0)"></div>
+                <div class="game-cell" onclick="makeMove(1)"></div>
+                <div class="game-cell" onclick="makeMove(2)"></div>
+                <div class="game-cell" onclick="makeMove(3)"></div>
+                <div class="game-cell" onclick="makeMove(4)"></div>
+                <div class="game-cell" onclick="makeMove(5)"></div>
+                <div class="game-cell" onclick="makeMove(6)"></div>
+                <div class="game-cell" onclick="makeMove(7)"></div>
+                <div class="game-cell" onclick="makeMove(8)"></div>
+            </div>
+            <div id="game-status" class="alert alert-info mt-3">Your turn (X)</div>
+            <button class="btn btn-danger" onclick="backToSelection()">Exit Game</button>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>
