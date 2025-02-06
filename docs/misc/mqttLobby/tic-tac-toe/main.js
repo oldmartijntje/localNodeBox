@@ -20,7 +20,6 @@ let clientIdListenTopic;
 let clientConnections = {};
 let maxClients = 1;
 let clientIdentifier = Math.random().toString(16).substr(2, 8);
-console.log(clientIdentifier);
 let iAmHost = false;
 let gameState;
 let lastServerMessage;
@@ -33,9 +32,10 @@ let lastServerMessage;
 // client.publish(sendingPingRequestURL, JSON.stringify({ userId: settings.userId }));
 
 let startingPlayer = ['X', 'O'][Math.floor(Math.random() * 2)];
-let currentPlayer = 'X';
+let currentPlayer = startingPlayer;
 let gameBoard = ['', '', '', '', '', '', '', '', ''];
 let gameActive = true;
+let mySymbol;
 
 checkForDisconnects()
 
@@ -77,6 +77,8 @@ function initializeGame(asHost) {
     document.getElementById('host-screen').classList.add('d-none');
     document.getElementById('game-screen').classList.remove('d-none');
     mySymbol = asHost ? 'X' : 'O';
+    console.log(mySymbol)
+
     isMyTurn = startingPlayer === mySymbol;
     showWaitingOverlay(!isMyTurn);
     document.getElementById('game-status').textContent = isMyTurn ?
@@ -159,6 +161,17 @@ client.on('message', (topic, message) => {
             if (formatted.moment > lastServerMessage - 10000) {
                 client.publish(topic, JSON.stringify({ type: MqttProtocols.PONG, messageFromServer: true, moment: Date.now() }));
             }
+        } else if (formatted.type === MqttProtocols.GAME_STATE && !formatted.messageFromServer) {
+            if (gameState === null) {
+                return;
+            }
+            if (gameBoard[formatted.gameState.clickedIndex] === '') {
+                gameBoard[formatted.gameState.clickedIndex] = currentPlayer;
+                document.getElementsByClassName('game-cell')[formatted.gameState.clickedIndex].textContent = currentPlayer;
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                showWaitingOverlay(false);
+                document.getElementById('game-status').textContent = `Your turn (${mySymbol})`;
+            }
         }
     } else if (!iAmHost) {
         if (formatted.type === MqttProtocols.SWITCHING_PROTOCOLS) {
@@ -193,6 +206,8 @@ client.on('message', (topic, message) => {
 function showHostScreen() {
     let code = generateGameCode();
     iAmHost = true;
+    startingPlayer = ['X', 'O'][Math.floor(Math.random() * 2)];
+    currentPlayer = startingPlayer;
     document.getElementById('selection-screen').classList.add('d-none');
     document.getElementById('host-screen').classList.remove('d-none');
     document.getElementById('game-code').textContent = code;
@@ -248,21 +263,32 @@ function joinGame() {
 
 function makeMove(index) {
     if (gameBoard[index] === '' && gameActive) {
+        console.log('making move', mySymbol, currentPlayer);
+        if (mySymbol !== currentPlayer) {
+            return;
+        }
         gameBoard[index] = currentPlayer;
         document.getElementsByClassName('game-cell')[index].textContent = currentPlayer;
+        gameState = {
+            gameBoard: gameBoard,
+            currentPlayer: currentPlayer,
+            gameActive: gameActive,
+            startingPlayer: startingPlayer,
+            clickedIndex: index
+        };
+        client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: false }));
+        showWaitingOverlay(true);
+        // if (checkWin()) {
+        //     document.getElementById('game-status').textContent = `Player ${currentPlayer} wins!`;
+        //     gameActive = false;
+        //     return;
+        // }
 
-        if (checkWin()) {
-            document.getElementById('game-status').textContent = `Player ${currentPlayer} wins!`;
-            gameActive = false;
-            return;
-        }
-
-        if (gameBoard.every(cell => cell !== '')) {
-            document.getElementById('game-status').textContent = "It's a draw!";
-            gameActive = false;
-            return;
-        }
-
+        // if (gameBoard.every(cell => cell !== '')) {
+        //     document.getElementById('game-status').textContent = "It's a draw!";
+        //     gameActive = false;
+        //     return;
+        // }
         currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
         document.getElementById('game-status').textContent = `Current turn: ${currentPlayer}`;
     }
