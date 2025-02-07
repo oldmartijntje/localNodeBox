@@ -33,28 +33,24 @@ const toolsData = {
                 {
                     href: "./mqtt-receiver",
                     text: "MQTT Receiver",
-                    toolId: "1",
                     isLocal: false,
                     inDevelopment: false
                 },
                 {
                     href: "./mqtt-receiver/windows-chat-app/",
                     text: "Windows 95 Chat (MQTT)",
-                    toolId: "2",
                     isLocal: false,
                     inDevelopment: false
                 },
                 {
                     href: "./misc/lifeCalander/",
                     text: "Life Calander",
-                    toolId: "2",
                     isLocal: false,
                     inDevelopment: false
                 },
                 {
                     href: "./misc/bracketing/tournament.html",
                     text: "Bracketing",
-                    toolId: "6",
                     isLocal: false,
                     inDevelopment: false
                 }
@@ -67,28 +63,24 @@ const toolsData = {
                 {
                     href: "./textTools/character_convertor/",
                     text: "Character Convertor",
-                    toolId: "3",
                     isLocal: false,
                     inDevelopment: false
                 },
                 {
                     href: "./textTools/CharacterCounter/",
                     text: "Character Counter",
-                    toolId: "4",
                     isLocal: false,
                     inDevelopment: false
                 },
                 {
                     href: "./textTools/patcher/",
                     text: "Versioning / Patching Tool",
-                    toolId: "5",
                     isLocal: false,
                     inDevelopment: false
                 },
                 {
                     href: "./textTools/markdownToWord/",
                     text: "Markdown to docx",
-                    toolId: "5",
                     isLocal: false,
                     inDevelopment: true
                 }
@@ -101,7 +93,6 @@ const toolsData = {
                 {
                     href: "./dataTools/spotify",
                     text: "Spotify Login",
-                    toolId: "7",
                     isLocal: false,
                     inDevelopment: false,
                     onlineOnly: true
@@ -109,7 +100,6 @@ const toolsData = {
                 {
                     href: "./dataTools/spotify/playlistFetcher.html",
                     text: "Spotify Playlist",
-                    toolId: "8",
                     isLocal: false,
                     inDevelopment: false,
                     onlineOnly: true
@@ -123,7 +113,12 @@ const toolsData = {
                 {
                     href: "./misc/randomGame/pong-game.html",
                     text: "Epic Pong Game (vs AI)",
-                    toolId: "9",
+                    isLocal: false,
+                    inDevelopment: false
+                },
+                {
+                    href: "./misc/mqttLobby/tic-tac-toe/index.html",
+                    text: "Tic Tac Toe online (MQTT)",
                     isLocal: false,
                     inDevelopment: false
                 }
@@ -136,7 +131,6 @@ const toolsData = {
                 {
                     href: "./educationalTools/math/snijpunt.html",
                     text: "Line Intersection Excersise",
-                    toolId: "10",
                     isLocal: false,
                     inDevelopment: false
                 }
@@ -153,7 +147,7 @@ function renderTools(online) {
     const accordion = document.getElementById('toolAccordion');
     accordion.innerHTML = '';
     const openedCategory = localStorage.getItem('localNodeBox.index.openedCategory') || toolsData.categories[0].id;
-
+    let i = 0;
     toolsData.categories.forEach((category, index) => {
         const isFirst = category.id === openedCategory;
         const html = `
@@ -173,14 +167,15 @@ function renderTools(online) {
                     data-bs-parent="#toolAccordion">
                     <div class="accordion-body">
                         <ul class="list-group">
-                            ${category.tools.map(tool => `
-                                <li>
+                            ${category.tools.map(tool => {
+            i++;
+            return `<li>
                                     ${tool.isLocal && !online ?
-                `<span class="list-group-item list-group-item-action localTool" data-tool="${tool.toolId}">${tool.text}</span>` :
-                `<a href="${tool.href}" ${tool.inDevelopment == true ? 'onclick="event.preventDefault()"' : ''} class="list-group-item list-group-item-action ${tool.inDevelopment == true ? 'localTool' : ''}" data-tool="${tool.toolId}">${tool.text}</a>`
-            }
+                    `<span class="list-group-item list-group-item-action localTool" data-tool="${i}">${tool.text}</span>` :
+                    `<a href="${tool.href}" ${tool.inDevelopment == true ? 'onclick="event.preventDefault()"' : ''} class="list-group-item list-group-item-action ${tool.inDevelopment == true ? 'localTool' : ''}" data-tool="${i}">${tool.text}</a>`
+                }
                                 </li>
-                            `).join('')}
+                            `}).join('')}
                         </ul>
                     </div>
                 </div>
