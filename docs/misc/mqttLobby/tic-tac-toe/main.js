@@ -40,6 +40,7 @@ let mySymbol;
 checkForDisconnects()
 
 function showWaitingOverlay(show) {
+    console.log('showing overlay', show);
     const overlay = document.querySelector('.waiting-overlay');
     overlay.style.display = show ? 'flex' : 'none';
     isMyTurn = !show;
@@ -77,9 +78,9 @@ function initializeGame(asHost) {
     document.getElementById('host-screen').classList.add('d-none');
     document.getElementById('game-screen').classList.remove('d-none');
     mySymbol = asHost ? 'X' : 'O';
-    console.log(mySymbol)
+    console.log(mySymbol, currentPlayer);
 
-    isMyTurn = startingPlayer === mySymbol;
+    isMyTurn = currentPlayer === mySymbol;
     showWaitingOverlay(!isMyTurn);
     document.getElementById('game-status').textContent = isMyTurn ?
         `Your turn (${mySymbol})` :
@@ -168,9 +169,19 @@ client.on('message', (topic, message) => {
             if (gameBoard[formatted.gameState.clickedIndex] === '') {
                 gameBoard[formatted.gameState.clickedIndex] = currentPlayer;
                 document.getElementsByClassName('game-cell')[formatted.gameState.clickedIndex].textContent = currentPlayer;
+                if (checkWin() != "") {
+                    showWaitingOverlay(false);
+                    document.getElementById('game-status').textContent = `Player ${checkWin()} wins!`;
+                    gameActive = false;
+                    for (let clientId in clientConnections) {
+                        client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: true }));
+                    }
+                    return
+                }
                 currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
                 showWaitingOverlay(false);
                 document.getElementById('game-status').textContent = `Your turn (${mySymbol})`;
+
             }
         }
     } else if (!iAmHost) {
@@ -187,6 +198,21 @@ client.on('message', (topic, message) => {
             gameActive = formatted.gameState.gameActive;
             startingPlayer = formatted.gameState.startingPlayer;
             initializeGame(false);
+            if (currentPlayer == mySymbol) {
+                showWaitingOverlay(false);
+                document.getElementById('game-status').textContent = `Your turn (${mySymbol})`;
+            } else {
+                showWaitingOverlay(true);
+                document.getElementById('game-status').textContent = `Waiting for opponent (${mySymbol === 'X' ? 'O' : 'X'})`;
+            }
+            for (let i = 0; i < gameBoard.length; i++) {
+                document.getElementsByClassName('game-cell')[i].textContent = gameBoard[i];
+            }
+            if (checkWin() != "") {
+                document.getElementById('game-status').textContent = `Player ${checkWin()} wins!`;
+                showWaitingOverlay(false);
+                gameActive = false;
+            }
         } else if (formatted.type === MqttProtocols.PING && formatted.messageFromServer) {
             lastServerMessage = Date.now();
             if (formatted.moment > lastServerMessage - 10000) {
@@ -276,7 +302,23 @@ function makeMove(index) {
             startingPlayer: startingPlayer,
             clickedIndex: index
         };
-        client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: false }));
+        if (iAmHost) {
+            if (checkWin() != "") {
+                document.getElementById('game-status').textContent = `Player ${currentPlayer} wins!`;
+                gameActive = false;
+                for (let clientId in clientConnections) {
+                    client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: true }));
+                }
+                return;
+            }
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            gameState.currentPlayer = currentPlayer;
+            for (let clientId in clientConnections) {
+                client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: true }));
+            }
+        } else {
+            client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: false }));
+        }
         showWaitingOverlay(true);
         // if (checkWin()) {
         //     document.getElementById('game-status').textContent = `Player ${currentPlayer} wins!`;
@@ -289,7 +331,6 @@ function makeMove(index) {
         //     gameActive = false;
         //     return;
         // }
-        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
         document.getElementById('game-status').textContent = `Current turn: ${currentPlayer}`;
     }
 }
@@ -301,12 +342,15 @@ function checkWin() {
         [0, 4, 8], [2, 4, 6] // Diagonals
     ];
 
-    return winPatterns.some(pattern => {
+    // return either "", "X", or "O"
+    for (let pattern of winPatterns) {
         const [a, b, c] = pattern;
-        return gameBoard[a] &&
-            gameBoard[a] === gameBoard[b] &&
-            gameBoard[a] === gameBoard[c];
-    });
+        if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+            return gameBoard[a];
+        }
+    }
+    return "";
+
 }
 
 function resetGame() {
