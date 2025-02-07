@@ -24,6 +24,9 @@ let iAmHost = false;
 let gameState;
 let lastServerMessage;
 let clientHandshakeCompleted = false;
+const restartButton = document.getElementById('restartButton');
+restartButton.disabled = true;
+restartButton.style.display = 'none';
 
 // client.on('message', (topic, message) => {
 //     const msg = message.toString();
@@ -84,6 +87,33 @@ function initializeGame(asHost) {
     document.getElementById('game-status').textContent = isMyTurn ?
         `Your turn (${mySymbol})` :
         `Waiting for opponent (${mySymbol === 'X' ? 'O' : 'X'})`;
+}
+
+function restartGame() {
+    gameBoard = ['', '', '', '', '', '', '', '', ''];
+    startingPlayer = ['X', 'O'][Math.floor(Math.random() * 2)];
+    currentPlayer = startingPlayer;
+    gameState = {
+        gameBoard: gameBoard,
+        currentPlayer: currentPlayer,
+        gameActive: gameActive,
+        startingPlayer: startingPlayer
+    };
+    for (let clientId in clientConnections) {
+        clientConnections[clientId].lastMessageSent = Date.now();
+        client.publish(clientConnections[clientId].privateTopic, JSON.stringify({ type: MqttProtocols.GAME_STATE, gameState: gameState, messageFromServer: true }));
+    }
+    if (currentPlayer === mySymbol) {
+        showWaitingOverlay(false);
+        document.getElementById('game-status').textContent = `Your turn (${mySymbol})`;
+    } else {
+        showWaitingOverlay(true);
+        document.getElementById('game-status').textContent = `Waiting for opponent (${mySymbol === 'X' ? 'O' : 'X'})`;
+    }
+    for (let i = 0; i < gameBoard.length; i++) {
+        document.getElementsByClassName('game-cell')[i].textContent = gameBoard[i];
+    }
+
 }
 
 // Modify the showHostScreen function
@@ -253,6 +283,8 @@ function showHostScreen() {
     lobbyId = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${code}`
     client.subscribe(lobbyId, (err) => { });
     console.log(`Listening to topic ${lobbyId}`);
+    restartButton.disabled = false;
+    restartButton.style.display = 'block';
 }
 
 function unsubscribe(topic) {
@@ -270,6 +302,8 @@ function showJoinScreen() {
     iAmHost = false;
     document.getElementById('selection-screen').classList.add('d-none');
     document.getElementById('join-screen').classList.remove('d-none');
+    restartButton.disabled = true;
+    restartButton.style.display = 'none';
 }
 
 function backToSelection() {

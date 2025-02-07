@@ -143,7 +143,10 @@
                 </div>
             </div>
             <div id="game-status" class="alert alert-info mt-3">Your turn (X)</div>
-            <button class="btn btn-danger" onclick="cleanupLobby();backToSelection();">Exit Game</button>
+            <div class="btn-group" role="group" aria-label="Basic example">
+                <button class="btn btn-danger" onclick="cleanupLobby();backToSelection();">Exit Game</button>
+                <button id="restartButton" class="btn btn-warning" onclick="restartGame()">Restart Game</button>
+            </div>
         </div>
     </div>
 
