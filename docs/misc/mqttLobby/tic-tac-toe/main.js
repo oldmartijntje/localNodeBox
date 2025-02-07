@@ -244,7 +244,6 @@ client.on('message', (topic, message) => {
 
 function showHostScreen() {
     let code = generateGameCode();
-    code = "123456";
     iAmHost = true;
     startingPlayer = ['X', 'O'][Math.floor(Math.random() * 2)];
     currentPlayer = startingPlayer;

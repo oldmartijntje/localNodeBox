@@ -3,21 +3,9 @@
 
 <head>
     <title>MQTT Protocol Security Tester</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
         .log-panel {
             border: 1px solid #ccc;
             padding: 10px;
@@ -32,186 +20,232 @@
         .forwarded {
             color: green;
         }
-
-        button {
-            margin: 5px;
-            padding: 5px 10px;
-        }
     </style>
 </head>
 
 <body>
-    <h1>MQTT Protocol Security Tester</h1>
-    <div class="container">
-        <div>
-            <h2>Control Panel</h2>
-            <div>
-                <label>Game Code to Intercept:</label>
-                <input type="text" id="gameCode" maxlength="6" value="123456">
-                <button onclick="startIntercept()">Start Intercepting</button>
-            </div>
-            <div>
-                <button onclick="clearLog()">Clear Log</button>
-            </div>
-            <!-- <div class="input-group mb-3">
-                <span class="input-group-text">Send</span>
-                <input type="text" class="form-control" placeholder="{}" aria-label="MQTT Message"
-                    aria-describedby="basic-addon1">
-                <span class="input-group-text">when</span>
-                <input type="text" class="form-control" placeholder="string" aria-label="MQTT Message"
-                    aria-describedby="basic-addon1">
-                <span class="input-group-text">in message from </span>
-                <div class="input-group-text">
-                    <input class="form-check-input mt-0" type="checkbox" value="server" aria-label="">
-                    <input class="form-check-input mt-0" type="checkbox" value="client" aria-label="">
+    <div class="container mt-4">
+        <h1 class="mb-4">MQTT Protocol Security Tester</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <h2>Control Panel</h2>
+                <div class="mb-3">
+                    <label for="gameCode" class="form-label">Game Code to Intercept:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="gameCode" maxlength="6" value="">
+                        <button class="btn btn-primary" id="startIntercept" onclick="startIntercept()">Start
+                            Intercepting</button>
+                    </div>
                 </div>
-            </div> -->
-        </div>
-        <div>
-            <h2>Message Log</h2>
-            <div id="logPanel" class="log-panel"></div>
+                <div class="mb-3">
+                    <button class="btn btn-secondary" onclick="clearLog()">Clear Log</button>
+                </div>
+                <div class="mb-6">
+                    <div class="input-group">
+                        <span class="input-group-text">Send</span>
+                        <textarea type="text" id="messageToSend" style="min-width: 10rem;" class="form-control"
+                            placeholder="{}" aria-label="MQTT Message"></textarea>
+                        <span class="input-group-text">when</span>
+                        <textarea type="text" id="conditionInput" style="min-width: 10rem;" class="form-control"
+                            placeholder="string" aria-label="Condition"></textarea>
+                        <span class="input-group-text">is found in a message for</span>
+                        <div class="input-group-text">
+                            <input class="form-check-input me-1" type="checkbox" id="serverCheckbox" value="server">
+                            <label class="form-check-label me-2" for="serverCheckbox">Server</label>
+                            <input class="form-check-input" type="checkbox" id="clientCheckbox" value="client">
+                            <label class="form-check-label" for="clientCheckbox">Client</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h2>Message Log</h2>
+                <div id="logPanel" class="log-panel"></div>
+            </div>
         </div>
     </div>
 
-    <script>
-        class MqttProtocols {
-            static JOIN = '102 Processing';
-            static SWITCHING_PROTOCOLS = '101 Switching Protocols';
-            static PING = '100 Continue';
-            static PONG = '200 OK';
-            static GAME_STATE = '202 Accepted';
-            static FULL_LOBBY = '416 Request Range Not Satisfiable'
-            static INVALID = '400 Bad Request';
-            static QUIT = '205 Reset Content';
-            static KICK = '403 Forbidden';
-            static BAN = '401 Unauthorized';
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
+<script>
+    class MqttProtocols {
+        static JOIN = '102 Processing';
+        static SWITCHING_PROTOCOLS = '101 Switching Protocols';
+        static PING = '100 Continue';
+        static PONG = '200 OK';
+        static GAME_STATE = '202 Accepted';
+        static FULL_LOBBY = '416 Request Range Not Satisfiable'
+        static INVALID = '400 Bad Request';
+        static QUIT = '205 Reset Content';
+        static KICK = '403 Forbidden';
+        static BAN = '401 Unauthorized';
+    }
+
+    const client = mqtt.connect('wss://test.mosquitto.org:8081');
+    let interceptedLobbyId = null;
+    let fakeClientId = Math.random().toString(16).substr(2, 8);
+    let clientConnections = {};
+
+    function log(message, type) {
+        const logPanel = document.getElementById('logPanel');
+        const logEntry = document.createElement('div');
+        logEntry.className = type;
+        logEntry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+        logPanel.appendChild(logEntry);
+        logPanel.scrollTop = logPanel.scrollHeight;
+    }
+
+    function clearLog() {
+        document.getElementById('logPanel').innerHTML = '';
+    }
+
+    function startIntercept() {
+        const gameCode = document.getElementById('gameCode').value;
+        const startInterceptButton = document.getElementById('startIntercept');
+        if (gameCode.length !== 6) {
+            alert('Please enter a valid 6-character game code');
+            return;
         }
+        startInterceptButton.disabled = true;
+        interceptedLobbyId = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${gameCode}`;
+        client.subscribe(interceptedLobbyId, (err) => {
+            if (!err) {
+                log(`Started intercepting lobby: ${gameCode}`, 'intercepted');
+            }
+        });
+    }
 
-        const client = mqtt.connect('wss://test.mosquitto.org:8081');
-        let interceptedLobbyId = null;
-        let fakeClientId = Math.random().toString(16).substr(2, 8);
-        let clientConnections = {};
-
-        function log(message, type) {
-            const logPanel = document.getElementById('logPanel');
-            const logEntry = document.createElement('div');
-            logEntry.className = type;
-            logEntry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
-            logPanel.appendChild(logEntry);
-            logPanel.scrollTop = logPanel.scrollHeight;
+    function unsubscribe(topic) {
+        try {
+            client.unsubscribe(lobbyId, (err) => { });
+        } catch (e) {
+            console.warn(`couldn't unsubscrib from ${topic}`);
+            // console.log(e);
         }
+    }
 
-        function clearLog() {
-            document.getElementById('logPanel').innerHTML = '';
+    client.on('message', (topic, message) => {
+        const msg = message.toString();
+        let formatted;
+        try {
+            formatted = JSON.parse(msg);
+        } catch (e) {
+            return;
         }
-
-        function startIntercept() {
-            const gameCode = document.getElementById('gameCode').value;
-            if (gameCode.length !== 6) {
-                alert('Please enter a valid 6-character game code');
+        console.log(formatted, topic);
+        if (formatted.type == MqttProtocols.JOIN) {
+            if (formatted.clientId === fakeClientId) {
                 return;
             }
-            interceptedLobbyId = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${gameCode}`;
-            client.subscribe(interceptedLobbyId, (err) => {
-                if (!err) {
-                    log(`Started intercepting lobby: ${gameCode}`, 'intercepted');
-                }
-            });
-        }
-
-        function unsubscribe(topic) {
-            try {
-                client.unsubscribe(lobbyId, (err) => { });
-            } catch (e) {
-                console.warn(`couldn't unsubscrib from ${topic}`);
-                // console.log(e);
+            client.subscribe(`${formatted.offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}`, (err) => { });
+            log(`Player ${formatted.clientId} joined the lobby`, 'intercepted');
+            clientConnections[formatted.clientId] = {
+                privateTopic: `${Math.random().toString(16).substr(2, 8)}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/intercept.html`,
+                serverConnection: null,
+                clientId: formatted.clientId,
+                clientOffset: formatted.offset,
+                originalClientId: `${formatted.offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}`
             }
-        }
-
-        client.on('message', (topic, message) => {
-            const msg = message.toString();
-            let formatted;
-            try {
-                formatted = JSON.parse(msg);
-            } catch (e) {
+            client.subscribe(clientConnections[formatted.clientId].privateTopic, (err) => { });
+            client.publish(clientConnections[formatted.clientId].originalClientId, JSON.stringify({ type: MqttProtocols.SWITCHING_PROTOCOLS, privateTopic: clientConnections[formatted.clientId].privateTopic, e: true, messageFromServer: true }));
+        } else if (formatted.type === MqttProtocols.SWITCHING_PROTOCOLS) {
+            if (formatted.e != undefined) {
                 return;
             }
-            console.log(formatted, topic);
-            if (formatted.type == MqttProtocols.JOIN) {
-                if (formatted.clientId === fakeClientId) {
-                    return;
+            log(`Player switched to private connection`, 'intercepted');
+            client.subscribe(formatted.privateTopic, (err) => { });
+            unsubscribe(topic);
+            for (const clientId in clientConnections) {
+                if (clientConnections[clientId].originalClientId === topic) {
+                    clientConnections[clientId].serverConnection = formatted.privateTopic;
+                    log(`Switched to private connection for player ${clientId}`, 'intercepted');
+                    break;
                 }
-                client.subscribe(`${formatted.offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}`, (err) => { });
-                log(`Player ${formatted.clientId} joined the lobby`, 'intercepted');
-                clientConnections[formatted.clientId] = {
-                    privateTopic: `${Math.random().toString(16).substr(2, 8)}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/intercept.html`,
-                    serverConnection: null,
-                    clientId: formatted.clientId,
-                    clientOffset: formatted.offset,
-                    originalClientId: `${formatted.offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}`
-                }
-                client.subscribe(clientConnections[formatted.clientId].privateTopic, (err) => { });
-                client.publish(clientConnections[formatted.clientId].originalClientId, JSON.stringify({ type: MqttProtocols.SWITCHING_PROTOCOLS, privateTopic: clientConnections[formatted.clientId].privateTopic, e: true, messageFromServer: true }));
-            } else if (formatted.type === MqttProtocols.SWITCHING_PROTOCOLS) {
-                if (formatted.e != undefined) {
-                    return;
-                }
-                log(`Player switched to private connection`, 'intercepted');
-                client.subscribe(formatted.privateTopic, (err) => { });
-                unsubscribe(topic);
-                for (const clientId in clientConnections) {
-                    if (clientConnections[clientId].originalClientId === topic) {
-                        clientConnections[clientId].serverConnection = formatted.privateTopic;
-                        log(`Switched to private connection for player ${clientId}`, 'intercepted');
+            }
+            client.publish(formatted.privateTopic, JSON.stringify({ type: MqttProtocols.OK, messageFromServer: false }));
+        } else if (formatted.type === MqttProtocols.GAME_STATE) {
+            if (formatted.e != undefined) {
+                console.warn('Already forwarded');
+                return;
+            }
+            formatted.e = true;
+            for (const clientId in clientConnections) {
+                if (clientConnections[clientId].serverConnection === topic && formatted.messageFromServer) {
+                    if (checkForIntercept(true, message, clientId)) {
                         break;
                     }
-                }
-                client.publish(formatted.privateTopic, JSON.stringify({ type: MqttProtocols.OK, messageFromServer: false }));
-            } else if (formatted.type === MqttProtocols.GAME_STATE) {
-                if (formatted.e != undefined) {
-                    console.warn('Already forwarded');
-                    return;
-                }
-                formatted.e = true;
-                for (const clientId in clientConnections) {
-                    if (clientConnections[clientId].serverConnection === topic && formatted.messageFromServer) {
-                        client.publish(clientConnections[clientId].privateTopic, JSON.stringify(formatted));
-                        log(`Forwarded game state to player ${clientId}: ${formatted.type}: ${message}`, 'forwarded');
+                    log(`Forwarded game state to player ${clientId}: ${formatted.type}: ${message}`, 'forwarded');
+                    client.publish(clientConnections[clientId].privateTopic, JSON.stringify(formatted));
+                    break;
+                } else if (clientConnections[clientId].privateTopic === topic && !formatted.messageFromServer) {
+                    if (checkForIntercept(false, message, clientId)) {
                         break;
-                    } else if (clientConnections[clientId].privateTopic === topic && !formatted.messageFromServer) {
-                        client.publish(clientConnections[clientId].serverConnection, JSON.stringify(formatted));
-                        log(`Forwarded game state to server from client ${clientId}: ${formatted.type}: ${message}`, 'forwarded');
-                        break;
-                    } else {
-                        log(`Couldn't find connection for topic ${topic}: ${formatted.type}`, 'intercepted');
                     }
+                    log(`Forwarded game state to server from client ${clientId}: ${formatted.type}: ${message}`, 'forwarded');
+                    client.publish(clientConnections[clientId].serverConnection, JSON.stringify(formatted));
+                    break;
+                } else {
+                    log(`Couldn't find connection for topic ${topic}: ${formatted.type}`, 'intercepted');
                 }
+            }
+        } else {
+            if (formatted.e != undefined) {
+                console.warn('Already forwarded');
+                return;
+            }
+            formatted.e = true;
+            for (const clientId in clientConnections) {
+                if (clientConnections[clientId].serverConnection === topic) {
+                    if (checkForIntercept(true, message, clientId)) {
+                        break;
+                    }
+                    client.publish(clientConnections[clientId].privateTopic, JSON.stringify(formatted));
+                    // log(`Forwarded message to player ${clientId}: ${formatted.type}`, 'forwarded');
+                    break;
+                } else if (clientConnections[clientId].privateTopic === topic && !formatted.messageFromServer) {
+                    if (checkForIntercept(false, message, clientId)) {
+                        break;
+                    }
+                    client.publish(clientConnections[clientId].serverConnection, JSON.stringify(formatted));
+                    // log(`Forwarded message to server from client ${clientId}: ${formatted.type}`, 'forwarded');
+                    break;
+                } else {
+                    // log(`Couldn't find connection for topic ${topic}: ${formatted.type}`, 'intercepted');
+                }
+            }
+        }
+    });
+
+    function checkForIntercept(forwardToClient, message, clientId) {
+        const messageToSend = document.getElementById('messageToSend').value;
+        const condition = document.getElementById('conditionInput').value;
+        const serverChecked = document.getElementById('serverCheckbox').checked;
+        const clientChecked = document.getElementById('clientCheckbox').checked;
+        const parsed = JSON.parse(messageToSend);
+        parsed.e = true;
+        console.log(JSON.stringify(messageToSend))
+        if (message.includes(condition)) {
+            if (forwardToClient && clientChecked) {
+                log(`Intercepted message: ${message}.`, 'intercepted');
+                client.publish(clientConnections[clientId].privateTopic, JSON.stringify(parsed));
+                return true;
+            } else if (!forwardToClient && serverChecked) {
+                log(`Intercepted message: ${message}.`, 'intercepted');
+                client.publish(clientConnections[clientId].serverConnection, JSON.stringify(parsed));
+                return true;
             } else {
-                if (formatted.e != undefined) {
-                    console.warn('Already forwarded');
-                    return;
-                }
-                formatted.e = true;
-                for (const clientId in clientConnections) {
-                    if (clientConnections[clientId].serverConnection === topic) {
-                        client.publish(clientConnections[clientId].privateTopic, JSON.stringify(formatted));
-                        // log(`Forwarded message to player ${clientId}: ${formatted.type}`, 'forwarded');
-                        break;
-                    } else if (clientConnections[clientId].privateTopic === topic && !formatted.messageFromServer) {
-                        client.publish(clientConnections[clientId].serverConnection, JSON.stringify(formatted));
-                        // log(`Forwarded message to server from client ${clientId}: ${formatted.type}`, 'forwarded');
-                        break;
-                    } else {
-                        // log(`Couldn't find connection for topic ${topic}: ${formatted.type}`, 'intercepted');
-                    }
-                }
+                return false;
             }
-        });
+        }
+        return false;
+    }
 
-        client.on('connect', () => {
-            log('Connected to MQTT broker', 'system');
-        });
-    </script>
+    client.on('connect', () => {
+        log('Connected to MQTT broker', 'system');
+    });
+</script>
 </body>
 
 </html>
