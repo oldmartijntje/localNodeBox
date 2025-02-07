@@ -53,6 +53,12 @@ const toolsData = {
                     text: "Bracketing",
                     isLocal: false,
                     inDevelopment: false
+                },
+                {
+                    href: "./misc/mqttLobby/tic-tac-toe/intercept.html",
+                    text: "MQTT Lobby Intercepter",
+                    isLocal: false,
+                    inDevelopment: false
                 }
             ]
         },
