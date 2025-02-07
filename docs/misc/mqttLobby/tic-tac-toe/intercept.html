@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MQTT Message Interceptor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .message-log {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        .message {
+            border-bottom: 1px solid #eee;
+            padding: 10px;
+        }
+
+        .intercepted {
+            background: #fff3cd;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>MQTT Message Interceptor</h1>
+        <div class="controls">
+            <input type="text" id="lobbyCode" placeholder="Enter lobby code" />
+            <button onclick="startIntercept()">Start Intercepting</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+        <div id="error" class="error"></div>
+        <div class="message-log" id="messageLog"></div>
+    </div>
+
+    <script>
+        let client;
+        let interceptClient;
+        let lobbyTopic;
+
+        function startIntercept() {
+            const code = document.getElementById('lobbyCode').value;
+            if (!code || code.length !== 6) {
+                showError('Please enter a valid 6-character lobby code');
+                return;
+            }
+
+            // Connect to MQTT broker
+            client = mqtt.connect('wss://test.mosquitto.org:8081');
+            interceptClient = mqtt.connect('wss://test.mosquitto.org:8081');
+
+            lobbyTopic = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${code}`;
+
+            client.on('connect', () => {
+                logMessage('Connected to MQTT broker');
+                // Subscribe to all relevant topics
+                client.subscribe(lobbyTopic);
+                client.subscribe(`https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/#`);
+            });
+
+            client.on('message', (topic, message) => {
+                try {
+                    const msg = JSON.parse(message.toString());
+                    logMessage('Intercepted Message:', {
+                        topic: topic,
+                        message: msg
+                    }, true);
+
+                    // Forward modified message if needed
+                    interceptClient.publish(topic, message.toString());
+                } catch (e) {
+                    showError('Error processing message: ' + e.message);
+                }
+            });
+        }
+
+        function logMessage(title, data = null, isIntercepted = false) {
+            const log = document.getElementById('messageLog');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isIntercepted ? 'intercepted' : ''}`;
+
+            let content = `<strong>${new Date().toLocaleTimeString()}</strong> - ${title}`;
+            if (data) {
+                content += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+
+            msgDiv.innerHTML = content;
+            log.insertBefore(msgDiv, log.firstChild);
+        }
+
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+        }
+
+        function clearLog() {
+            document.getElementById('messageLog').innerHTML = '';
+            document.getElementById('error').textContent = '';
+        }
+    </script>
+</body>
+
+</html>

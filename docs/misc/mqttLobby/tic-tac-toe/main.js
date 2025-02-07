@@ -125,14 +125,14 @@ client.on('message', (topic, message) => {
         if (formatted.type === MqttProtocols.JOIN) {
             if (Object.keys(clientConnections).length < maxClients) {
                 clientConnections[formatted.clientId] = {
-                    privateTopic: `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}/lobby/${lobbyId}/offset/${Math.random().toString(16).substr(2, 8)}`,
+                    privateTopic: `${Math.random().toString(16).substr(2, 8)}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}/lobby/${lobbyId}`,
                     lastMessageSent: Date.now(),
                     lastMessageReceived: Date.now(),
                 }
                 client.subscribe(clientConnections[formatted.clientId].privateTopic, (err) => { });
-                client.publish(`https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}`, JSON.stringify({ type: MqttProtocols.SWITCHING_PROTOCOLS, privateTopic: clientConnections[formatted.clientId].privateTopic }));
+                client.publish(`${formatted.offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}`, JSON.stringify({ type: MqttProtocols.SWITCHING_PROTOCOLS, privateTopic: clientConnections[formatted.clientId].privateTopic }));
             } else {
-                client.publish(`https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}/offset/${formatted.offset}`, JSON.stringify({ type: MqttProtocols.FULL_LOBBY }));
+                client.publish(`${formatted.offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}`, JSON.stringify({ type: MqttProtocols.FULL_LOBBY }));
             }
         } else if (formatted.type === MqttProtocols.OK) {
             initializeGame(true)
@@ -280,7 +280,7 @@ function joinGame() {
     if (code.length === 6) {
         lobbyId = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${code}`
         let offset = Math.random().toString(16).substr(2, 8);
-        clientIdListenTopic = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${clientIdentifier}/offset/${offset}`;
+        clientIdListenTopic = `${offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${clientIdentifier}`;
         console.log(clientIdListenTopic);
         client.subscribe(clientIdListenTopic, (err) => { });
         client.publish(lobbyId, JSON.stringify({ type: MqttProtocols.JOIN, clientId: clientIdentifier, offset: offset }));
