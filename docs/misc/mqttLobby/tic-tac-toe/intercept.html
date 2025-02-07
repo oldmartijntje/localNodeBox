@@ -2,130 +2,215 @@
 <html>
 
 <head>
-    <title>MQTT Message Interceptor</title>
+    <title>MQTT Protocol Security Tester</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            background: #f0f0f0;
-        }
-
-        .container {
-            max-width: 1200px;
+            padding: 20px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
-        .message-log {
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-            max-height: 400px;
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .log-panel {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
             overflow-y: auto;
         }
 
-        .controls {
-            margin: 20px 0;
-        }
-
-        .message {
-            border-bottom: 1px solid #eee;
-            padding: 10px;
-        }
-
         .intercepted {
-            background: #fff3cd;
+            color: red;
+        }
+
+        .forwarded {
+            color: green;
         }
 
         button {
-            padding: 8px 16px;
             margin: 5px;
-            cursor: pointer;
-        }
-
-        .error {
-            color: red;
-            margin: 10px 0;
+            padding: 5px 10px;
         }
     </style>
 </head>
 
 <body>
+    <h1>MQTT Protocol Security Tester</h1>
     <div class="container">
-        <h1>MQTT Message Interceptor</h1>
-        <div class="controls">
-            <input type="text" id="lobbyCode" placeholder="Enter lobby code" />
-            <button onclick="startIntercept()">Start Intercepting</button>
-            <button onclick="clearLog()">Clear Log</button>
+        <div>
+            <h2>Control Panel</h2>
+            <div>
+                <label>Game Code to Intercept:</label>
+                <input type="text" id="gameCode" maxlength="6" value="123456">
+                <button onclick="startIntercept()">Start Intercepting</button>
+            </div>
+            <div>
+                <button onclick="clearLog()">Clear Log</button>
+            </div>
+            <!-- <div class="input-group mb-3">
+                <span class="input-group-text">Send</span>
+                <input type="text" class="form-control" placeholder="{}" aria-label="MQTT Message"
+                    aria-describedby="basic-addon1">
+                <span class="input-group-text">when</span>
+                <input type="text" class="form-control" placeholder="string" aria-label="MQTT Message"
+                    aria-describedby="basic-addon1">
+                <span class="input-group-text">in message from </span>
+                <div class="input-group-text">
+                    <input class="form-check-input mt-0" type="checkbox" value="server" aria-label="">
+                    <input class="form-check-input mt-0" type="checkbox" value="client" aria-label="">
+                </div>
+            </div> -->
         </div>
-        <div id="error" class="error"></div>
-        <div class="message-log" id="messageLog"></div>
+        <div>
+            <h2>Message Log</h2>
+            <div id="logPanel" class="log-panel"></div>
+        </div>
     </div>
 
     <script>
-        let client;
-        let interceptClient;
-        let lobbyTopic;
+        class MqttProtocols {
+            static JOIN = '102 Processing';
+            static SWITCHING_PROTOCOLS = '101 Switching Protocols';
+            static PING = '100 Continue';
+            static PONG = '200 OK';
+            static GAME_STATE = '202 Accepted';
+            static FULL_LOBBY = '416 Request Range Not Satisfiable'
+            static INVALID = '400 Bad Request';
+            static QUIT = '205 Reset Content';
+            static KICK = '403 Forbidden';
+            static BAN = '401 Unauthorized';
+        }
+
+        const client = mqtt.connect('wss://test.mosquitto.org:8081');
+        let interceptedLobbyId = null;
+        let fakeClientId = Math.random().toString(16).substr(2, 8);
+        let clientConnections = {};
+
+        function log(message, type) {
+            const logPanel = document.getElementById('logPanel');
+            const logEntry = document.createElement('div');
+            logEntry.className = type;
+            logEntry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            logPanel.appendChild(logEntry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logPanel').innerHTML = '';
+        }
 
         function startIntercept() {
-            const code = document.getElementById('lobbyCode').value;
-            if (!code || code.length !== 6) {
-                showError('Please enter a valid 6-character lobby code');
+            const gameCode = document.getElementById('gameCode').value;
+            if (gameCode.length !== 6) {
+                alert('Please enter a valid 6-character game code');
                 return;
             }
-
-            // Connect to MQTT broker
-            client = mqtt.connect('wss://test.mosquitto.org:8081');
-            interceptClient = mqtt.connect('wss://test.mosquitto.org:8081');
-
-            lobbyTopic = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${code}`;
-
-            client.on('connect', () => {
-                logMessage('Connected to MQTT broker');
-                // Subscribe to all relevant topics
-                client.subscribe(lobbyTopic);
-                client.subscribe(`https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/#`);
-            });
-
-            client.on('message', (topic, message) => {
-                try {
-                    const msg = JSON.parse(message.toString());
-                    logMessage('Intercepted Message:', {
-                        topic: topic,
-                        message: msg
-                    }, true);
-
-                    // Forward modified message if needed
-                    interceptClient.publish(topic, message.toString());
-                } catch (e) {
-                    showError('Error processing message: ' + e.message);
+            interceptedLobbyId = `https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/lobby/${gameCode}`;
+            client.subscribe(interceptedLobbyId, (err) => {
+                if (!err) {
+                    log(`Started intercepting lobby: ${gameCode}`, 'intercepted');
                 }
             });
         }
 
-        function logMessage(title, data = null, isIntercepted = false) {
-            const log = document.getElementById('messageLog');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${isIntercepted ? 'intercepted' : ''}`;
-
-            let content = `<strong>${new Date().toLocaleTimeString()}</strong> - ${title}`;
-            if (data) {
-                content += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        function unsubscribe(topic) {
+            try {
+                client.unsubscribe(lobbyId, (err) => { });
+            } catch (e) {
+                console.warn(`couldn't unsubscrib from ${topic}`);
+                // console.log(e);
             }
-
-            msgDiv.innerHTML = content;
-            log.insertBefore(msgDiv, log.firstChild);
         }
 
-        function showError(message) {
-            document.getElementById('error').textContent = message;
-        }
+        client.on('message', (topic, message) => {
+            const msg = message.toString();
+            let formatted;
+            try {
+                formatted = JSON.parse(msg);
+            } catch (e) {
+                return;
+            }
+            console.log(formatted, topic);
+            if (formatted.type == MqttProtocols.JOIN) {
+                if (formatted.clientId === fakeClientId) {
+                    return;
+                }
+                client.subscribe(`${formatted.offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}`, (err) => { });
+                log(`Player ${formatted.clientId} joined the lobby`, 'intercepted');
+                clientConnections[formatted.clientId] = {
+                    privateTopic: `${Math.random().toString(16).substr(2, 8)}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/intercept.html`,
+                    serverConnection: null,
+                    clientId: formatted.clientId,
+                    clientOffset: formatted.offset,
+                    originalClientId: `${formatted.offset}/https://oldmartijntje.github.io/misc/mqttLobby/tic-tac-toe/user/${formatted.clientId}`
+                }
+                client.subscribe(clientConnections[formatted.clientId].privateTopic, (err) => { });
+                client.publish(clientConnections[formatted.clientId].originalClientId, JSON.stringify({ type: MqttProtocols.SWITCHING_PROTOCOLS, privateTopic: clientConnections[formatted.clientId].privateTopic, e: true, messageFromServer: true }));
+            } else if (formatted.type === MqttProtocols.SWITCHING_PROTOCOLS) {
+                if (formatted.e != undefined) {
+                    return;
+                }
+                log(`Player switched to private connection`, 'intercepted');
+                client.subscribe(formatted.privateTopic, (err) => { });
+                unsubscribe(topic);
+                for (const clientId in clientConnections) {
+                    if (clientConnections[clientId].originalClientId === topic) {
+                        clientConnections[clientId].serverConnection = formatted.privateTopic;
+                        log(`Switched to private connection for player ${clientId}`, 'intercepted');
+                        break;
+                    }
+                }
+                client.publish(formatted.privateTopic, JSON.stringify({ type: MqttProtocols.OK, messageFromServer: false }));
+            } else if (formatted.type === MqttProtocols.GAME_STATE) {
+                if (formatted.e != undefined) {
+                    console.warn('Already forwarded');
+                    return;
+                }
+                formatted.e = true;
+                for (const clientId in clientConnections) {
+                    if (clientConnections[clientId].serverConnection === topic && formatted.messageFromServer) {
+                        client.publish(clientConnections[clientId].privateTopic, JSON.stringify(formatted));
+                        log(`Forwarded game state to player ${clientId}: ${formatted.type}: ${message}`, 'forwarded');
+                        break;
+                    } else if (clientConnections[clientId].privateTopic === topic && !formatted.messageFromServer) {
+                        client.publish(clientConnections[clientId].serverConnection, JSON.stringify(formatted));
+                        log(`Forwarded game state to server from client ${clientId}: ${formatted.type}: ${message}`, 'forwarded');
+                        break;
+                    } else {
+                        log(`Couldn't find connection for topic ${topic}: ${formatted.type}`, 'intercepted');
+                    }
+                }
+            } else {
+                if (formatted.e != undefined) {
+                    console.warn('Already forwarded');
+                    return;
+                }
+                formatted.e = true;
+                for (const clientId in clientConnections) {
+                    if (clientConnections[clientId].serverConnection === topic) {
+                        client.publish(clientConnections[clientId].privateTopic, JSON.stringify(formatted));
+                        // log(`Forwarded message to player ${clientId}: ${formatted.type}`, 'forwarded');
+                        break;
+                    } else if (clientConnections[clientId].privateTopic === topic && !formatted.messageFromServer) {
+                        client.publish(clientConnections[clientId].serverConnection, JSON.stringify(formatted));
+                        // log(`Forwarded message to server from client ${clientId}: ${formatted.type}`, 'forwarded');
+                        break;
+                    } else {
+                        // log(`Couldn't find connection for topic ${topic}: ${formatted.type}`, 'intercepted');
+                    }
+                }
+            }
+        });
 
-        function clearLog() {
-            document.getElementById('messageLog').innerHTML = '';
-            document.getElementById('error').textContent = '';
-        }
+        client.on('connect', () => {
+            log('Connected to MQTT broker', 'system');
+        });
     </script>
 </body>
 
