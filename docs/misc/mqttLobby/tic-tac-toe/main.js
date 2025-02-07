@@ -93,6 +93,7 @@ function restartGame() {
     gameBoard = ['', '', '', '', '', '', '', '', ''];
     startingPlayer = ['X', 'O'][Math.floor(Math.random() * 2)];
     currentPlayer = startingPlayer;
+    gameActive = true;
     gameState = {
         gameBoard: gameBoard,
         currentPlayer: currentPlayer,
