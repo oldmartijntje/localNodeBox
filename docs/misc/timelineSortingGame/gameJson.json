@@ -1,21 +1,5 @@
 {
-    "oldmartijntje-projects": [
-        {
-            "id": 0,
-            "title": "Pokemon Backrooms",
-            "link": "https://github.com/oldmartijntje/Pokemon-Backrooms"
-        },
-        {
-            "id": 0,
-            "title": "Pokemon Vibranium",
-            "link": "https://github.com/oldmartijntje/Pokemon-Vibranium"
-        },
-        {
-            "id": 0,
-            "title": "The Python Text Adventure",
-            "link": "https://github.com/oldmartijntje/The-Game"
-        }
-    ],
+    "oldmartijntje-projects": [],
     "gameTheory": [
         {
             "id": 0,
