@@ -1,4 +1,36 @@
 {
+    "randomEvents": [
+        {
+            "date": "26/february/2025",
+            "title": "This website page is created",
+            "link": "https://oldmartijntje.github.io/localNodeBox/misc/timelineSortingGame/index.html"
+        },
+        {
+            "date": "14/may/2024",
+            "title": "Minecraft 15th anniversary event starts",
+            "link": ""
+        },
+        {
+            "date": "23/july/2023",
+            "title": "Musk Turns Twitter into 'X'",
+            "link": ""
+        },
+        {
+            "date": "27/october/2022",
+            "title": "Musk Bought Twitter",
+            "link": ""
+        },
+        {
+            "date": "21/june/2006",
+            "title": "First Release of America's got talent",
+            "link": ""
+        },
+        {
+            "date": "11/september/2001",
+            "title": "9/11",
+            "link": ""
+        }
+    ],
     "oldmartijntje-projects": [
         {
             "date": "13 feb 2025",

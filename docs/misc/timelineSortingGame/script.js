@@ -162,17 +162,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const cardTitle = document.createElement('div');
         cardTitle.className = 'card-title';
         cardTitle.textContent = currentItem.title;
-        const cardLink = document.createElement('a');
-        cardLink.className = 'card-link';
-        cardLink.href = currentItem.link;
-        cardLink.textContent = currentItem.link;
-        cardLink.target = '_blank';
+        if (currentItem.link != undefined && currentItem.link != "") {
+            const cardLink = document.createElement('a');
+            cardLink.className = 'card-link';
+            cardLink.href = currentItem.link;
+            cardLink.textContent = currentItem.link;
+            cardLink.target = '_blank';
+            card.appendChild(cardLink);
+        }
         const cardId = document.createElement('div');
         cardId.style.marginTop = '5px';
         cardId.style.color = '#666';
         cardId.textContent = `Nr: ${allItems.length - currentItem.id}`;
         card.appendChild(cardTitle);
-        card.appendChild(cardLink);
         card.appendChild(cardId);
         timelineItem.appendChild(card);
         const isCorrect = checkPlacement(currentItem, index, placedItems);
