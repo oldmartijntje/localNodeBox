@@ -127,6 +127,12 @@ const toolsData = {
                     text: "Tic Tac Toe online (MQTT)",
                     isLocal: false,
                     inDevelopment: false
+                },
+                {
+                    href: "./misc/timelineSortingGame/index.html",
+                    text: "Timeline sorting game",
+                    isLocal: false,
+                    inDevelopment: false
                 }
             ]
         },
