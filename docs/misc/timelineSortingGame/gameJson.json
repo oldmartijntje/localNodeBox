@@ -1,5 +1,179 @@
 {
-    "oldmartijntje-projects": [],
+    "oldmartijntje-projects": [
+        {
+            "date": "13 feb 2025",
+            "title": "Minecraft mod testing",
+            "link": "https://github.com/oldmartijntje/minecraft_mod_testing"
+        },
+        {
+            "id": 0,
+            "date": "3 feb 2025",
+            "title": "Blanked_out",
+            "link": "https://github.com/oldmartijntje/blanked_out"
+        },
+        {
+            "id": 0,
+            "date": "22 sep 2024",
+            "title": "nodejs LocalNodeBox.html",
+            "link": "https://github.com/oldmartijntje/localNodeBox"
+        },
+        {
+            "id": 0,
+            "date": "9 sep 2024",
+            "title": "nodejs file tinder",
+            "link": "https://github.com/oldmartijntje/file-tinder"
+        },
+        {
+            "id": 0,
+            "date": "24 aug 2024",
+            "title": "react oldmartijntje.nl",
+            "link": "https://github.com/oldmartijntje/oldmartijntje.nl"
+        },
+        {
+            "id": 0,
+            "date": "9 jul 2024",
+            "title": "Totally Normal Chess Simulator.html",
+            "link": "https://oldmartijntje.github.io/Totally-Normal-Chess-Simulator"
+        },
+        {
+            "id": 0,
+            "date": "27 jun 2024",
+            "title": "Js Kazamata-CLI",
+            "link": "https://github.com/oldmartijntje/Kazamata-CLI"
+        },
+        {
+            "id": 0,
+            "date": "20 jun 2024",
+            "title": "Nodejs docker api example",
+            "link": "https://github.com/oldmartijntje/example-node-docker-api"
+        },
+        {
+            "id": 0,
+            "date": "1 jun 2024",
+            "title": "Project-Kazamata.js",
+            "link": "https://github.com/oldmartijntje/Project-Kazamata"
+        },
+        {
+            "id": 0,
+            "date": "7 may 2024",
+            "title": "Static json-api",
+            "link": "https://github.com/oldmartijntje/json-api"
+        },
+        {
+            "id": 0,
+            "date": "16 jan 2024",
+            "title": "quartz docs.oldmartijntje.nl",
+            "link": "https://github.com/oldmartijntje/Articles"
+        },
+        {
+            "id": 0,
+            "date": "22 nov 2023",
+            "title": "oldmartijntje.nl api.php",
+            "link": "https://github.com/oldmartijntje/oldmartijntje.nl-api"
+        },
+        {
+            "id": 0,
+            "date": "25 oct 2023",
+            "title": "Angular oldmartijntje.nl",
+            "link": "https://github.com/oldmartijntje/outdated-oldmartijntje-website"
+        },
+        {
+            "id": 0,
+            "date": "9 oct 2023",
+            "title": "Adventure-land.nl.html",
+            "link": "https://github.com/oldmartijntje/AdventureLandWebsite"
+        },
+        {
+            "id": 0,
+            "date": "13 jun 2023",
+            "title": "Angular Spotify Hub",
+            "link": "https://github.com/oldmartijntje/Angular-MarHub"
+        },
+        {
+            "id": 0,
+            "date": "25 may 2023",
+            "title": "C# Pokemon Battle Simulator",
+            "link": "https://github.com/oldmartijntje/Pokemon-Battle-Simulator"
+        },
+        {
+            "id": 0,
+            "date": "17 may 2023",
+            "title": "SiSu Chatbot",
+            "link": "https://simpelsubsidie.nl/"
+        },
+        {
+            "id": 0,
+            "date": "11 apr 2023",
+            "title": "Python virtualBBQduck ('virtual assistant')",
+            "link": "https://github.com/oldmartijntje/virtual-assistant"
+        },
+        {
+            "id": 0,
+            "date": "27 mer 2023",
+            "title": "Henk Empires New Kingdoms.php",
+            "link": "https://github.com/oldmartijntje/Henk-Empires-New-Kingdoms"
+        },
+        {
+            "id": 0,
+            "date": "14 mar 2023",
+            "title": "survive the internet.php",
+            "link": "https://github.com/oldmartijntje/2F1BELP2O1---eindopdracht---Mad-libs"
+        },
+        {
+            "id": 0,
+            "date": "1 oct 2022",
+            "title": "Pokemon Backrooms (rpg maker)",
+            "link": "https://github.com/oldmartijntje/Pokemon-Backrooms"
+        },
+        {
+            "id": 0,
+            "date": "8 sep 2022",
+            "title": "Angular Project Viewer",
+            "link": "https://github.com/oldmartijntje/Project-Viewer"
+        },
+        {
+            "id": 0,
+            "date": "22 apr 2022",
+            "title": "Pokemon Vibranium (rpg maker)",
+            "link": "https://github.com/oldmartijntje/Pokemon-Vibranium"
+        },
+        {
+            "id": 0,
+            "date": "19 apr 2022",
+            "title": "Python Codedungeon",
+            "link": "https://github.com/oldmartijntje/CodeDungeon"
+        },
+        {
+            "id": 0,
+            "date": "----- 2022",
+            "title": "Python GUI UNO",
+            "link": "https://github.com/oldmartijntje/UNO"
+        },
+        {
+            "id": 0,
+            "date": "9 feb 2022",
+            "title": "Python \"Account System\"",
+            "link": "https://github.com/oldmartijntje/accounts-system"
+        },
+        {
+            "id": 0,
+            "date": "16 nov 2021",
+            "title": "Python CLI UNO",
+            "link": "https://github.com/oldmartijntje/UNO"
+        },
+        {
+            "id": 0,
+            "date": "5 nov 2021",
+            "title": "The Python Text Adventure",
+            "link": "https://github.com/oldmartijntje/The-Game"
+        },
+        {
+            "id": 0,
+            "date": "2 nov 2021",
+            "title": "Python LAN-testing",
+            "link": "https://github.com/oldmartijntje/LAN-testing"
+        }
+    ],
     "gameTheory": [
         {
             "id": 0,
