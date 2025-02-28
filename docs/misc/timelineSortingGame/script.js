@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', function () {
         filmTheory: { score: 0, percent: 0 },
         foodTheory: { score: 0, percent: 0 },
         styleTheory: { score: 0, percent: 0 },
-        "oldmartijntje-projects": { score: 0, percent: 0 }
+        "oldmartijntje-projects": { score: 0, percent: 0 },
+        randomHistory: { score: 0, percent: 0 },
     };
 
     // Load highscores from localStorage
