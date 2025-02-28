@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avans 1.3 LU2 Environment Editor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #canvas {
+            border: 1px solid #000;
+            background-color: #f0f0f0;
+            cursor: pointer;
+        }
+
+        .grid-cell {
+            stroke: #ddd;
+            stroke-width: 1;
+        }
+
+        .object {
+            cursor: move;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        #statusMessage {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-4">
+        <div id="statusMessage"></div>
+
+        <div id="loginSection" class="mb-4">
+            <h2>Login</h2>
+            <div class="mb-3">
+                <button id="loginButton" class="btn btn-primary">Login with Test Account</button>
+                <span id="loginStatus" class="ms-2"></span>
+            </div>
+        </div>
+
+        <div id="editorSection" style="display: none;">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h2>Environment Editor</h2>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button id="refreshEnvironments" class="btn btn-secondary">Refresh Environments</button>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="environmentSelect" class="form-label">Select Environment</label>
+                    <select id="environmentSelect" class="form-select">
+                        <option value="">-- Select an environment --</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="prefabSelect" class="form-label">Select Prefab</label>
+                    <select id="prefabSelect" class="form-select">
+                        <option value="1">Prefab 1</option>
+                        <option value="2">Prefab 2</option>
+                        <option value="3">Prefab 3</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="sortingLayer" class="form-label">Sorting Layer</label>
+                    <input type="number" id="sortingLayer" class="form-control" value="0" min="0">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="canvas-container">
+                        <svg id="canvas" width="800" height="600"></svg>
+                    </div>
+                    <div class="mt-2">
+                        <span id="mouseCoords"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'https://localhost:7082';
+        const GRID_SIZE = 16; // One coordinate per 16 pixels
+
+        // DOM Elements
+        const loginButton = document.getElementById('loginButton');
+        const loginStatus = document.getElementById('loginStatus');
+        const loginSection = document.getElementById('loginSection');
+        const editorSection = document.getElementById('editorSection');
+        const environmentSelect = document.getElementById('environmentSelect');
+        const prefabSelect = document.getElementById('prefabSelect');
+        const sortingLayerInput = document.getElementById('sortingLayer');
+        const canvas = document.getElementById('canvas');
+        const refreshEnvironmentsButton = document.getElementById('refreshEnvironments');
+        const mouseCoords = document.getElementById('mouseCoords');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // State variables
+        let accessToken = '';
+        let refreshToken = '';
+        let selectedEnvironment = null;
+        let canvasObjects = [];
+        let svgns = "http://www.w3.org/2000/svg";
+
+        // Prefab colors for visual differentiation
+        const prefabColors = {
+            1: '#ff6b6b', // Red
+            2: '#4ecdc4', // Teal
+            3: '#ffe66d'  // Yellow
+        };
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            statusMessage.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+
+            // Auto dismiss after 3 seconds
+            setTimeout(() => {
+                const alert = statusMessage.querySelector('.alert');
+                if (alert) {
+                    alert.classList.remove('show');
+                    setTimeout(() => {
+                        statusMessage.innerHTML = '';
+                    }, 150);
+                }
+            }, 3000);
+        }
+
+        // Login with the test account
+        loginButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/account/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: "oldmartijntje+0w4kifd1@gmail.com",
+                        password: "IdG6g5FzylT&%4C"
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    accessToken = data.accessToken;
+                    refreshToken = data.refreshToken;
+
+                    // Save tokens in cookies
+                    document.cookie = `accessToken=${accessToken}; path=/`;
+                    document.cookie = `refreshToken=${refreshToken}; path=/`;
+
+                    loginStatus.textContent = "Logged in successfully!";
+                    loginSection.style.display = 'none';
+                    editorSection.style.display = 'block';
+
+                    // Load environments after login
+                    loadEnvironments();
+
+                    showStatus('Logged in successfully!', 'success');
+                } else {
+                    const error = await response.text();
+                    console.error('Login failed:', error);
+                    loginStatus.textContent = "Login failed!";
+                    showStatus('Login failed!', 'danger');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                loginStatus.textContent = "Login error!";
+                showStatus('Login error! Check console for details.', 'danger');
+            }
+        });
+
+        // Check if already logged in from cookies
+        function checkLoginFromCookies() {
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                const [key, value] = cookie.trim().split('=');
+                acc[key] = value;
+                return acc;
+            }, {});
+
+            if (cookies.accessToken && cookies.refreshToken) {
+                accessToken = cookies.accessToken;
+                refreshToken = cookies.refreshToken;
+                loginSection.style.display = 'none';
+                editorSection.style.display = 'block';
+                loadEnvironments();
+                showStatus('Restored login from cookies', 'info');
+            }
+        }
+
+        // Load environments from API
+        async function loadEnvironments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/Environment`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const environments = await response.json();
+                    populateEnvironmentSelect(environments);
+                    showStatus('Environments loaded', 'success');
+                } else {
+                    console.error('Failed to load environments:', await response.text());
+                    showStatus('Failed to load environments', 'warning');
+                }
+            } catch (error) {
+                console.error('Error loading environments:', error);
+                showStatus('Error loading environments', 'danger');
+            }
+        }
+
+        // Populate environment select dropdown
+        function populateEnvironmentSelect(environments) {
+            environmentSelect.innerHTML = '<option value="">-- Select an environment --</option>';
+
+            environments.forEach(env => {
+                const option = document.createElement('option');
+                option.value = env.id;
+                option.textContent = `${env.name} (${env.maxLength}x${env.maxHeight})`;
+                option.dataset.width = env.maxLength;
+                option.dataset.height = env.maxHeight;
+                environmentSelect.appendChild(option);
+            });
+        }
+
+        // Environment selection change handler
+        environmentSelect.addEventListener('change', function () {
+            if (this.value) {
+                const selectedOption = this.options[this.selectedIndex];
+                const width = parseInt(selectedOption.dataset.width);
+                const height = parseInt(selectedOption.dataset.height);
+
+                selectedEnvironment = {
+                    id: parseInt(this.value),
+                    name: selectedOption.textContent.split(' (')[0],
+                    maxLength: width,
+                    maxHeight: height
+                };
+
+                // Setup canvas with the selected environment dimensions
+                setupCanvas(width, height);
+
+                // Load existing objects for this environment
+                loadEnvironmentObjects(selectedEnvironment.id);
+            } else {
+                selectedEnvironment = null;
+                clearCanvas();
+            }
+        });
+
+        // Setup canvas with grid
+        function setupCanvas(width, height) {
+            // Clear existing canvas
+            clearCanvas();
+
+            // Set canvas dimensions based on environment size (scaled by GRID_SIZE)
+            const canvasWidth = width * GRID_SIZE;
+            const canvasHeight = height * GRID_SIZE;
+
+            canvas.setAttribute('width', canvasWidth);
+            canvas.setAttribute('height', canvasHeight);
+
+            // Draw grid
+            for (let x = 0; x <= width; x++) {
+                const line = document.createElementNS(svgns, 'line');
+                line.setAttribute('x1', x * GRID_SIZE);
+                line.setAttribute('y1', 0);
+                line.setAttribute('x2', x * GRID_SIZE);
+                line.setAttribute('y2', canvasHeight);
+                line.setAttribute('class', 'grid-cell');
+                canvas.appendChild(line);
+            }
+
+            for (let y = 0; y <= height; y++) {
+                const line = document.createElementNS(svgns, 'line');
+                line.setAttribute('x1', 0);
+                line.setAttribute('y1', y * GRID_SIZE);
+                line.setAttribute('x2', canvasWidth);
+                line.setAttribute('y2', y * GRID_SIZE);
+                line.setAttribute('class', 'grid-cell');
+                canvas.appendChild(line);
+            }
+        }
+
+        // Clear canvas and objects
+        function clearCanvas() {
+            while (canvas.firstChild) {
+                canvas.removeChild(canvas.firstChild);
+            }
+            canvasObjects = [];
+        }
+
+        // Load objects for a specific environment
+        async function loadEnvironmentObjects(environmentId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/Environment/${environmentId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    // This endpoint might return environment data including objects
+                    // For now, we're just assuming it returns a list of environments with their objects
+                    const data = await response.json();
+
+                    // If there are objects, render them
+                    if (data && data.length > 0 && data[0].objects) {
+                        renderObjects(data[0].objects);
+                    }
+
+                    showStatus('Environment objects loaded', 'success');
+                } else {
+                    console.error('Failed to load environment objects:', await response.text());
+                    showStatus('Failed to load environment objects', 'warning');
+                }
+            } catch (error) {
+                console.error('Error loading environment objects:', error);
+                showStatus('Error loading environment objects', 'danger');
+            }
+        }
+
+        // Render objects on canvas
+        function renderObjects(objects) {
+            objects.forEach(obj => {
+                addObjectToCanvas(obj);
+            });
+        }
+
+        // Canvas click handler - place new object
+        canvas.addEventListener('click', function (event) {
+            if (!selectedEnvironment) {
+                showStatus('Please select an environment first', 'warning');
+                return;
+            }
+
+            // Get click coordinates relative to canvas
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Convert to grid coordinates
+            const gridX = Math.floor(x / GRID_SIZE);
+            const gridY = Math.floor(y / GRID_SIZE);
+
+            // Check if coordinates are within environment bounds
+            if (gridX < 0 || gridX >= selectedEnvironment.maxLength ||
+                gridY < 0 || gridY >= selectedEnvironment.maxHeight) {
+                showStatus('Position outside environment bounds', 'warning');
+                return;
+            }
+
+            // Create object data
+            const objectData = {
+                prefabId: parseInt(prefabSelect.value),
+                positionX: gridX,
+                positionY: gridY,
+                scaleX: 1,
+                scaleY: 1,
+                rotationZ: 0,
+                sortingLayer: parseInt(sortingLayerInput.value),
+                environmentId: selectedEnvironment.id
+            };
+
+            // Send to API
+            createObject(objectData);
+        });
+
+        // Create object via API
+        async function createObject(objectData) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/Object2D`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify(objectData)
+                });
+
+                if (response.ok) {
+                    // Add object to canvas
+                    addObjectToCanvas(objectData);
+                    showStatus('Object placed successfully', 'success');
+                } else {
+                    console.error('Failed to create object:', await response.text());
+                    showStatus('Failed to create object', 'warning');
+                }
+            } catch (error) {
+                console.error('Error creating object:', error);
+                showStatus('Error creating object', 'danger');
+            }
+        }
+
+        // Add object visual to canvas
+        function addObjectToCanvas(objectData) {
+            const x = objectData.positionX * GRID_SIZE;
+            const y = objectData.positionY * GRID_SIZE;
+            const prefabId = objectData.prefabId;
+            const color = prefabColors[prefabId] || '#999';
+
+            // Create a group for the object
+            const group = document.createElementNS(svgns, 'g');
+            group.setAttribute('class', 'object');
+            group.setAttribute('data-prefab', prefabId);
+            group.setAttribute('data-x', objectData.positionX);
+            group.setAttribute('data-y', objectData.positionY);
+            group.setAttribute('transform', `translate(${x}, ${y})`);
+
+            // Create a rectangle representing the object
+            const rect = document.createElementNS(svgns, 'rect');
+            rect.setAttribute('x', 0);
+            rect.setAttribute('y', 0);
+            rect.setAttribute('width', GRID_SIZE);
+            rect.setAttribute('height', GRID_SIZE);
+            rect.setAttribute('fill', color);
+            rect.setAttribute('stroke', '#000');
+            rect.setAttribute('stroke-width', '1');
+
+            // Add prefab ID text
+            const text = document.createElementNS(svgns, 'text');
+            text.setAttribute('x', GRID_SIZE / 2);
+            text.setAttribute('y', GRID_SIZE / 2 + 5);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', '#000');
+            text.setAttribute('font-size', '12');
+            text.textContent = prefabId;
+
+            // Add elements to group
+            group.appendChild(rect);
+            group.appendChild(text);
+
+            // Add group to canvas
+            canvas.appendChild(group);
+
+            // Add to local objects array
+            canvasObjects.push(objectData);
+        }
+
+        // Track mouse coordinates
+        canvas.addEventListener('mousemove', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const gridX = Math.floor(x / GRID_SIZE);
+            const gridY = Math.floor(y / GRID_SIZE);
+
+            mouseCoords.textContent = `Position: (${gridX}, ${gridY})`;
+        });
+
+        // Refresh environments button
+        refreshEnvironmentsButton.addEventListener('click', loadEnvironments);
+
+        // Initialize on page load
+        window.addEventListener('load', function () {
+            checkLoginFromCookies();
+        });
+
+        // Refresh token when it's about to expire
+        async function refreshAccessToken() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/account/refresh`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        refreshToken: refreshToken
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    accessToken = data.accessToken;
+                    refreshToken = data.refreshToken;
+
+                    // Update cookies
+                    document.cookie = `accessToken=${accessToken}; path=/`;
+                    document.cookie = `refreshToken=${refreshToken}; path=/`;
+
+                    console.log('Token refreshed successfully');
+                } else {
+                    console.error('Failed to refresh token');
+                }
+            } catch (error) {
+                console.error('Error refreshing token:', error);
+            }
+        }
+
+        // Refresh token every 15 minutes
+        setInterval(refreshAccessToken, 15 * 60 * 1000);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
