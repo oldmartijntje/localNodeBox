@@ -514,13 +514,14 @@
                 });
 
                 if (response.ok) {
-                    // This endpoint might return environment data including objects
-                    // For now, we're just assuming it returns a list of environments with their objects
                     const data = await response.json();
 
+                    // Clear existing objects on canvas
+                    clearObjects();
+
                     // If there are objects, render them
-                    if (data && data.length > 0 && data[0].objects) {
-                        renderObjects(data[0].objects);
+                    if (data && data.environmentObjects && data.environmentObjects.length > 0) {
+                        renderObjects(data.environmentObjects);
                     }
 
                     showStatus('Environment objects loaded', 'success');
@@ -532,6 +533,14 @@
                 console.error('Error loading environment objects:', error);
                 showStatus('Error loading environment objects', 'danger');
             }
+        }
+
+        function clearObjects() {
+            // Remove only objects from canvas, not grid lines
+            document.querySelectorAll('.object').forEach(obj => {
+                canvas.removeChild(obj);
+            });
+            canvasObjects = [];
         }
 
         // Render objects on canvas
