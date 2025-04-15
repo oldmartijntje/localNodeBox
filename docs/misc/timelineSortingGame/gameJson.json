@@ -46,6 +46,11 @@
             "link": "https://en.wikipedia.org/wiki/Osama_bin_Laden"
         },
         {
+            "date": "11/march/2011",
+            "title": "Fukushima nuclear accident",
+            "link": "https://en.wikipedia.org/wiki/Fukushima_nuclear_accident"
+        },
+        {
             "date": "21/june/2006",
             "title": "First Release of America's got talent",
             "link": ""
@@ -76,6 +81,11 @@
             "link": "https://en.wikipedia.org/wiki/Chernobyl_disaster"
         },
         {
+            "date": "20/november/1985",
+            "title": "Windows 1.0 Release",
+            "link": "https://en.wikipedia.org/wiki/Microsoft"
+        },
+        {
             "date": "october/1978",
             "title": "The Y.M.C.A. song released",
             "link": "https://en.wikipedia.org/wiki/Y.M.C.A._(song)"
@@ -96,6 +106,16 @@
             "link": ""
         },
         {
+            "date": "6/augustus/1945",
+            "title": "The Nuke \"Little Boy\" was dropped on Hiroshima",
+            "link": "https://en.wikipedia.org/wiki/Hiroshima#World_War_II_and_the_atomic_bombing_(1939%E2%80%931945)"
+        },
+        {
+            "date": "1942",
+            "title": "Superglue was accidentally invented",
+            "link": "https://en.wikipedia.org/wiki/Cyanoacrylate"
+        },
+        {
             "date": "1/september/1939",
             "title": "WW2 Started",
             "link": ""
@@ -104,6 +124,11 @@
             "date": "28/september/1928",
             "title": "Discovery of Penicillin",
             "link": "https://en.wikipedia.org/wiki/Penicillin"
+        },
+        {
+            "date": "15/april/1923",
+            "title": "Japanese mission school fire",
+            "link": "https://en.wikipedia.org/wiki/Japanese_mission_school_fire"
         },
         {
             "date": "1907",
