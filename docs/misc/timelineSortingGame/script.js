@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
         foodTheory: { score: 0, percent: 0 },
         styleTheory: { score: 0, percent: 0 },
         "oldmartijntje-projects": { score: 0, percent: 0 },
+        "oldmartijntje-spotify-playlists": { score: 0, percent: 0 },
         randomHistory: { score: 0, percent: 0 },
     };
 
