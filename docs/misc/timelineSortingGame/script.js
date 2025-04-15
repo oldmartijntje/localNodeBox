@@ -22,8 +22,27 @@ document.addEventListener('DOMContentLoaded', function () {
         randomHistory: { score: 0, percent: 0 },
     };
 
-    // Load highscores from localStorage
-    loadHighscores();
+    // Fetch the game JSON data from exampleurl
+    fetch("./gameJson.json")
+        .then(response => response.json())
+        .then(data => {
+            categoryData = data;
+            // Re-enable the start button now that the data is loaded
+            startButton.disabled = false;
+            Object.keys(categoryData).forEach(category => {
+                if (categoryData[category][0].Id == undefined || true) {
+                    let lenngth = categoryData[category].length;
+                    for (let i = 0; i < lenngth; i++) {
+                        categoryData[category][i].id = i;
+                    }
+                }
+            });
+            loadHighscores();
+
+        })
+        .catch(error => {
+            console.error("Error fetching game data: ", error);
+        });
 
     // DOM elements
     const categorySelect = document.getElementById('category-select');
@@ -54,33 +73,31 @@ document.addEventListener('DOMContentLoaded', function () {
     // Disable the start button until JSON data is loaded
     startButton.disabled = true;
 
-    // Fetch the game JSON data from exampleurl
-    fetch("./gameJson.json")
-        .then(response => response.json())
-        .then(data => {
-            categoryData = data;
-            // Re-enable the start button now that the data is loaded
-            startButton.disabled = false;
-            Object.keys(categoryData).forEach(category => {
-                if (categoryData[category][0].Id == undefined || true) {
-                    let lenngth = categoryData[category].length;
-                    for (let i = 0; i < lenngth; i++) {
-                        categoryData[category][i].id = i;
-                    }
-                }
-            });
 
-        })
-        .catch(error => {
-            console.error("Error fetching game data: ", error);
-        });
 
     function loadHighscores() {
+        let saveData = localStorage.getItem('localNodeBox.timeline_highscores');
+
+        if (saveData != null) {
+            saveData = JSON.parse(saveData);
+        } else {
+            saveData = {};
+            Object.keys(highscores).forEach(category => {
+                const oldScore = localStorage.getItem(`timeline_highscore_${category}`);
+                if (oldScore) {
+                    saveData[category] = parseInt(oldScore);
+                    localStorage.removeItem(`timeline_highscore_${category}`);
+                    localStorage.removeItem(`timeline_highscore_percent_${category}`);
+                }
+            });
+            localStorage.setItem('localNodeBox.timeline_highscores', JSON.stringify(saveData));
+        }
+
         Object.keys(highscores).forEach(category => {
-            const savedScore = localStorage.getItem(`timeline_highscore_${category}`);
-            const savedPercent = localStorage.getItem(`timeline_highscore_percent_${category}`);
-            if (savedScore) highscores[category].score = parseInt(savedScore);
-            if (savedPercent) highscores[category].percent = parseInt(savedPercent);
+            const savedScore = saveData[category];
+            const savedPercent = savedScore / categoryData[category].length * 100;
+            if (savedScore) highscores[category].score = savedScore;
+            if (savedPercent) highscores[category].percent = Math.round(savedPercent);
         });
     }
 
@@ -237,14 +254,20 @@ document.addEventListener('DOMContentLoaded', function () {
         gameActive = false;
         currentCard.style.display = 'none';
         const percentScore = Math.round((score / gameItems.length) * 100);
-        if (score > highscores[currentCategory].score) {
+
+        // Load existing saved scores
+        let saveData = localStorage.getItem('localNodeBox.timeline_highscores');
+        saveData = saveData ? JSON.parse(saveData) : {};
+
+        // Update highscore if current score is higher
+        const previousHigh = saveData[currentCategory] || 0;
+        if (score > previousHigh) {
+            saveData[currentCategory] = score;
+            localStorage.setItem('localNodeBox.timeline_highscores', JSON.stringify(saveData));
             highscores[currentCategory].score = score;
-            localStorage.setItem(`timeline_highscore_${currentCategory}`, score);
-        }
-        if (percentScore > highscores[currentCategory].percent) {
             highscores[currentCategory].percent = percentScore;
-            localStorage.setItem(`timeline_highscore_percent_${currentCategory}`, percentScore);
         }
+
         displayHighscore();
         const scoreText = `Final Score: ${score} out of ${gameItems.length} (${percentScore}%)`;
         finalScores.forEach(el => el.textContent = scoreText);
@@ -255,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
             gameOverMessage.style.display = 'block';
         }
     }
+
 
     function displayHighscore() {
         const currentHighscore = highscores[currentCategory];

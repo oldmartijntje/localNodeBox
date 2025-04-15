@@ -1,9 +1,19 @@
 {
     "randomHistory": [
         {
+            "date": "4/april/2025",
+            "title": "'A Minecraft Movie' Released worldwide",
+            "link": "https://en.wikipedia.org/wiki/A_Minecraft_Movie"
+        },
+        {
             "date": "26/february/2025",
             "title": "This website page is created",
             "link": "https://oldmartijntje.github.io/localNodeBox/misc/timelineSortingGame/index.html"
+        },
+        {
+            "date": "20/january/2025",
+            "title": "Elon musk got in charge of the U.S. DOGE Service",
+            "link": "https://en.wikipedia.org/wiki/A_Minecraft_Movie"
         },
         {
             "date": "14/may/2024",
@@ -21,9 +31,19 @@
             "link": ""
         },
         {
+            "date": "20/may/2019",
+            "title": "Volodymyr Zelenskyy became the President of Ukraine",
+            "link": "https://en.wikipedia.org/wiki/Volodymyr_Zelenskyy"
+        },
+        {
             "date": "28/november/2018",
             "title": "Stan Lee Died",
             "link": "https://en.wikipedia.org/wiki/Stan_Lee"
+        },
+        {
+            "date": "11/may/2011",
+            "title": "Osama bin Laden Killed by the U.S. military",
+            "link": "https://en.wikipedia.org/wiki/Osama_bin_Laden"
         },
         {
             "date": "21/june/2006",
@@ -84,6 +104,11 @@
             "date": "28/september/1928",
             "title": "Discovery of Penicillin",
             "link": "https://en.wikipedia.org/wiki/Penicillin"
+        },
+        {
+            "date": "1907",
+            "title": "Hitler got rejected from art school",
+            "link": "https://en.wikipedia.org/wiki/Adolf_Hitler#Childhood_and_education"
         },
         {
             "date": "17/december/1903",
