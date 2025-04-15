@@ -11,10 +11,13 @@
             localStorageData[key] = localStorage.getItem(key);
         }
 
+        const domain = window.location.hostname.replace(/[^a-zA-Z0-9.-]/g, "_"); // Sanitize domain name
+        const fileName = `${domain}_localStorage.json`;
+
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localStorageData, null, 2));
         const downloadAnchor = document.createElement("a");
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", "localStorageExport.json");
+        downloadAnchor.setAttribute("download", fileName);
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         document.body.removeChild(downloadAnchor);
