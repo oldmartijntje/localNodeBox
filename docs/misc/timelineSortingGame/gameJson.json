@@ -350,6 +350,11 @@
     ],
     "oldmartijntje-projects": [
         {
+            "date": "27 apr 2025",
+            "title": "OldMa's Game Statistics",
+            "link": "https://github.com/oldmartijntje/board-game-statistics"
+        },
+        {
             "date": "8 apr 2025",
             "title": "GameingGrounds Sandbox",
             "link": "https://github.com/oldmartijntje/GameingGrounds_Sandbox"
