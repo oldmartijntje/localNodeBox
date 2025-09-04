@@ -85,6 +85,12 @@ const toolsData = {
                     inDevelopment: false
                 },
                 {
+                    href: "./textTools/capitalize-i/",
+                    text: "Capitalize your i's",
+                    isLocal: false,
+                    inDevelopment: false
+                },
+                {
                     href: "./textTools/markdownToWord/",
                     text: "Markdown to docx",
                     isLocal: false,
