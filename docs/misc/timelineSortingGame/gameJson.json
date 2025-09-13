@@ -198,9 +198,29 @@
     ],
     "oldmartijntje-spotify-playlists": [
         {
+            "date": "13 sept 2025",
+            "title": "Paimon on steroids",
+            "link": "https://open.spotify.com/playlist/2iUWlhorQNHBV2FtCgbcoJ?si=f0d0eba72a90413c"
+        },
+        {
+            "date": "28 aug 2025",
+            "title": "Songs that turned out to be about sex",
+            "link": "https://open.spotify.com/playlist/5BEj14cUKeNSPhwkdh6Vo3?si=14c4999805624d20"
+        },
+        {
             "date": "16 aug 2025",
             "title": "HOEIIJJJJ",
             "link": "https://open.spotify.com/playlist/5otbVgZ6z5jgy60smWaMJ5?si=78b13589b9c943b7"
+        },
+        {
+            "date": "24 July 2025",
+            "title": "Hermitcraft",
+            "link": "https://open.spotify.com/playlist/15j5NTpTeWVTjsRyVPs3xL?si=e8395df148714340"
+        },
+        {
+            "date": "28 June 2025",
+            "title": "kill me for always (feat. porter robinson)",
+            "link": "https://open.spotify.com/playlist/4Pp8DgHLxEGH8rPbzioj3k?si=66143191079c4a46"
         },
         {
             "date": "9 apr 2025",
@@ -369,6 +389,26 @@
         }
     ],
     "oldmartijntje-projects": [
+        {
+            "date": "5 sep 2025",
+            "title": "Vertical Dinosaur",
+            "link": "https://github.com/oldmartijntje/vertical-dinosaur"
+        },
+        {
+            "date": "2 sep 2025",
+            "title": "Basalt",
+            "link": "https://github.com/oldmartijntje/Basalt"
+        },
+        {
+            "date": "4 sep 2025",
+            "title": "VHS-Rentals",
+            "link": "https://github.com/oldmartijntje/vhs-rentals"
+        },
+        {
+            "date": "22 aug 2025",
+            "title": "cautious fishstick",
+            "link": "https://github.com/oldmartijntje/cautious-fishstick"
+        },
         {
             "date": "12 aug 2025",
             "title": "Skinforge",
